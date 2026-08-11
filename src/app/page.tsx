@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import ProposalCard from '../components/ProposalCard';
 import { createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
+import { custom } from 'viem';
 
 export interface Audit {
   id: number;
@@ -107,9 +108,9 @@ export default function Home() {
         const wc = createClient({
           chain: studionet,
           account: address,
-          provider: provider,
+          transport: custom(provider),
         });
-        await wc.connect("studionet");
+        // We don't need to call .connect() if passing transport directly
         setWriteClient(wc);
       } catch (err) {
         console.error("Failed to connect wallet", err);
