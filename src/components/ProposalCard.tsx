@@ -1,4 +1,4 @@
-interface Audit {
+export interface Audit {
   id: number;
   targetUrl: string;
   status: string;
@@ -25,37 +25,43 @@ export default function ProposalCard({ audit, index, onExecute, account }: { aud
 
   return (
     <div 
-      className="cyber-card animate-slide-in"
+      className="glass-panel animate-slide-up"
       style={{ animationDelay: `${index * 0.1}s` }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-        <h3 className="font-mono text-primary" style={{ fontSize: '1rem', wordBreak: 'break-all', paddingRight: '1rem' }}>
-          &gt; TARGET: {audit.targetUrl}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+        <h3 style={{ fontSize: '1.2rem', wordBreak: 'break-all', paddingRight: '1rem', fontWeight: '500' }}>
+          Target: <span className="text-primary">{audit.targetUrl}</span>
         </h3>
         <span className={`badge ${getStatusClass(audit.status)}`}>
           {audit.status}
         </span>
       </div>
       
-      <div className="terminal-block" style={{ marginBottom: '1rem' }}>
-        <p style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>&gt; GenVM_Analysis_Output:</p>
-        <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{audit.analysis}</p>
+      <div style={{ 
+        background: 'rgba(0, 0, 0, 0.3)', 
+        borderRadius: '12px', 
+        padding: '1.5rem', 
+        marginBottom: '1.5rem',
+        border: '1px solid var(--glass-border)'
+      }}>
+        <p style={{ marginBottom: '0.8rem', fontWeight: '600', color: 'var(--primary)', letterSpacing: '0.5px' }}>GenVM Analysis Output</p>
+        <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', color: 'var(--text-muted)' }}>{audit.analysis}</p>
       </div>
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', width: '100%' }}>
-          <span className="font-mono text-muted">ESCROW_SETTLEMENT:</span>
-          <span className={`font-mono ${getPayoutClass(audit.payoutStatus)}`} style={{ fontWeight: '600' }}>
-            [{audit.payoutStatus === 'Pending' ? 'AWAITING_CONSENSUS' : audit.payoutStatus}]
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Escrow Settlement:</span>
+          <span className={`${getPayoutClass(audit.payoutStatus)}`} style={{ fontWeight: '600', fontSize: '1rem' }}>
+            {audit.payoutStatus === 'Pending' ? 'Awaiting Consensus' : audit.payoutStatus}
           </span>
           
           {audit.status === 'Pending' && account && onExecute && (
             <button 
-              className="cyber-button" 
-              style={{ marginLeft: 'auto', padding: '0.4rem 1rem', fontSize: '0.75rem', width: 'auto' }}
+              className="btn btn-primary" 
+              style={{ marginLeft: 'auto', padding: '0.6rem 1.2rem', fontSize: '0.9rem' }}
               onClick={onExecute}
             >
-              INITIALIZE_CONSENSUS
+              Initialize Consensus
             </button>
           )}
         </div>

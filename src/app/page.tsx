@@ -19,10 +19,15 @@ export default function Home() {
   const [url, setUrl] = useState('');
   const [code, setCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [account, setAccount] = useState<string | null>(null);
+  const [balance, setBalance] = useState<string | null>(null);
+  
   const [audits, setAudits] = useState<Audit[]>([]);
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [readClient, setReadClient] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [writeClient, setWriteClient] = useState<any>(null);
 
   const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0xC458348a760fd33D78AD1b73931C7ff6bb91cb82";
@@ -33,6 +38,21 @@ export default function Home() {
     });
     setReadClient(rc);
   }, []);
+
+  const updateBalance = async (address: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof window !== 'undefined' && (window as any).ethereum) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const provider = (window as any).ethereum;
+        const balHex = await provider.request({ method: 'eth_getBalance', params: [address, 'latest'] });
+        const bal = (parseInt(balHex, 16) / 1e18).toFixed(4);
+        setBalance(bal);
+      } catch (e) {
+        console.error("Failed to fetch balance", e);
+      }
+    }
+  };
 
   const fetchAudits = useCallback(async () => {
     if (!readClient || !contractAddress) return;
@@ -56,10 +76,10 @@ export default function Home() {
           });
           i++;
         } catch (e) {
-          break; // Stop when index doesn't exist
+          break;
         }
       }
-      setAudits(fetched.reverse()); // Show newest first
+      setAudits(fetched.reverse());
     } catch (err) {
       console.error("Failed to fetch audits", err);
     }
@@ -74,12 +94,15 @@ export default function Home() {
   }, [readClient, contractAddress, fetchAudits]);
 
   const connectWallet = async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (typeof window !== 'undefined' && (window as any).ethereum) {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const provider = (window as any).ethereum;
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const address = accounts[0];
         setAccount(address);
+        updateBalance(address);
         
         const wc = createClient({
           chain: studionet,
@@ -94,6 +117,12 @@ export default function Home() {
     } else {
       alert("Please install a Web3 wallet like MetaMask.");
     }
+  };
+
+  const disconnectWallet = () => {
+    setAccount(null);
+    setBalance(null);
+    setWriteClient(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,7 +142,10 @@ export default function Home() {
       });
       setUrl('');
       setCode('');
-      setTimeout(fetchAudits, 2000);
+      setTimeout(() => {
+        fetchAudits();
+        updateBalance(account);
+      }, 2000);
     } catch (error) {
       console.error(error);
       alert("Error submitting audit.");
@@ -142,98 +174,106 @@ export default function Home() {
   };
 
   return (
-    <div className="container">
-      <div className="scan-line"></div>
+    <>
+      <div className="bg-orb orb-1"></div>
+      <div className="bg-orb orb-2"></div>
       
-      <header className="header">
-        <div className="logo animate-pulse-glow">
-          <span style={{ color: 'var(--primary)' }}>[</span> Sentinelpy <span style={{ color: 'var(--primary)' }}>]</span>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <div className="font-mono text-muted" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: account ? 'var(--primary)' : 'var(--danger)' }}></div>
-            StudioNet: {account ? 'CONNECTED' : 'OFFLINE'}
-          </div>
-          <button 
-            className="cyber-button" 
-            style={{ width: 'auto', padding: '8px 16px' }}
-            onClick={connectWallet}
-          >
-            {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'INIT CONNECTION'}
-          </button>
-        </div>
-      </header>
-
-      <main>
-        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>AI-Governed Security Intelligence</h1>
-          <p className="text-muted" style={{ maxWidth: '600px', margin: '0 auto' }}>
-            Submit smart contracts and target domains to the GenVM Intelligent Contract. 
-            Audits are evaluated for malicious patterns via distributed AI consensus. Staking 1 GEN is required.
-          </p>
-        </div>
-
-        <section style={{ maxWidth: '800px', margin: '0 auto 4rem auto' }}>
-          <div className="cyber-card">
-            <h2 className="font-mono text-primary" style={{ marginBottom: '1.5rem', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              &gt; SUBMIT_NEW_AUDIT_TASK
-            </h2>
-            
-            <form onSubmit={handleSubmit}>
-              <div>
-                <label className="font-mono text-muted" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem' }}>TARGET_URL</label>
-                <input 
-                  type="url" 
-                  className="cyber-input" 
-                  placeholder="https://github.com/..."
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  required 
-                />
-              </div>
-              
-              <div>
-                <label className="font-mono text-muted" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem' }}>PAYLOAD_SOURCE_CODE</label>
-                <textarea 
-                  className="cyber-input" 
-                  placeholder="// Paste contract code to be analyzed..."
-                  rows={6}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  required
-                ></textarea>
-              </div>
-              
-              <button 
-                type="submit" 
-                className="cyber-button" 
-                disabled={isSubmitting}
-                style={{ marginTop: '0.5rem' }}
-              >
-                {isSubmitting ? 'EXECUTING STAKE & SUBMIT...' : 'STAKE 1 GEN & INITIATE SCAN'}
-              </button>
-            </form>
-          </div>
-        </section>
-
-        <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h2 className="font-mono" style={{ fontSize: '1.3rem' }}>Threat Intelligence Feed</h2>
-            <div className="font-mono text-primary" style={{ fontSize: '0.8rem' }}>{audits.length} RECORDS FOUND</div>
+      <div className="container animate-slide-up">
+        <header className="header">
+          <div className="logo">
+            <span className="logo-icon">❖</span> Sentinelpy
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
-            {audits.length === 0 && (
-              <div className="terminal-block" style={{ textAlign: 'center', padding: '3rem' }}>
-                &gt; NO_AUDITS_FOUND_ON_NETWORK
-              </div>
+          <div className="wallet-info">
+            {account ? (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <span className="balance">{balance} GEN</span>
+                  <span className="address">{`${account.slice(0, 6)}...${account.slice(-4)}`}</span>
+                </div>
+                <button className="btn btn-danger" onClick={disconnectWallet}>Disconnect</button>
+              </>
+            ) : (
+              <button className="btn btn-primary" onClick={connectWallet}>
+                Connect Wallet
+              </button>
             )}
-            {audits.map((audit, i) => (
-              <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
-            ))}
           </div>
-        </section>
-      </main>
-    </div>
+        </header>
+
+        <main>
+          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+            <h1 className="text-gradient" style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>
+              AI-Governed Security Intelligence
+            </h1>
+            <p className="text-muted" style={{ maxWidth: '600px', margin: '0 auto', fontSize: '1.1rem', lineHeight: '1.6' }}>
+              Submit smart contracts and target domains to the GenVM Intelligent Contract. 
+              Audits are evaluated for malicious patterns via distributed AI consensus.
+            </p>
+          </div>
+
+          <section style={{ maxWidth: '800px', margin: '0 auto 4rem auto' }}>
+            <div className="glass-panel">
+              <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                Initiate New Audit
+              </h2>
+              
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label className="form-label">Target URL</label>
+                  <input 
+                    type="url" 
+                    className="form-input" 
+                    placeholder="https://github.com/..."
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    required 
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Payload / Source Code</label>
+                  <textarea 
+                    className="form-input" 
+                    placeholder="Paste the contract code to be analyzed..."
+                    rows={6}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    required
+                  ></textarea>
+                </div>
+                
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  style={{ width: '100%', padding: '1rem', fontSize: '1.1rem' }}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Staking 1 GEN & Submitting...' : 'Stake 1 GEN & Submit Audit'}
+                </button>
+              </form>
+            </div>
+          </section>
+
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h2 style={{ fontSize: '2rem' }}>Threat Intelligence Feed</h2>
+              <div className="badge badge-secure">{audits.length} Audits Indexed</div>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+              {audits.length === 0 && (
+                <div className="glass-panel" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+                  No audits found on the network.
+                </div>
+              )}
+              {audits.map((audit, i) => (
+                <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
+              ))}
+            </div>
+          </section>
+        </main>
+      </div>
+    </>
   );
 }
