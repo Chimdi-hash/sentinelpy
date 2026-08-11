@@ -179,9 +179,9 @@ export default function Home() {
     <div className="dashboard-layout">
       {/* Top Navigation Bar */}
       <header className="topbar">
-        <div className="brand">
-          <div className="brand-icon"></div>
-          SENTINELPY <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '400' }}>// AI-GOVERNED AUDIT DASHBOARD</span>
+        <div className="brand" style={{ fontSize: '0.9rem' }}>
+          <div className="brand-icon" style={{ width: '16px', height: '16px' }}></div>
+          SENTINELPY <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '400' }}>// AI-GOVERNED AUDIT DASHBOARD</span>
         </div>
         
         <div className="nav-links">
@@ -211,7 +211,7 @@ export default function Home() {
             </div>
           ) : (
             <button className="cyber-button" style={{ width: 'auto' }} onClick={connectWallet}>
-              CONNECT NODE
+              CONNECT WALLET
             </button>
           )}
         </div>
