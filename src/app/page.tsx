@@ -141,31 +141,48 @@ export default function Home() {
 
   return (
     <div className="container">
+      <div className="scan-line"></div>
+      
       <header className="header">
-        <div className="logo animate-float">🛡️ Sentinelpy</div>
-        <button 
-          className="glass-button" 
-          style={{ width: 'auto' }}
-          onClick={connectWallet}
-        >
-          {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Connect Wallet'}
-        </button>
+        <div className="logo animate-pulse-glow">
+          <span style={{ color: 'var(--primary)' }}>[</span> Sentinelpy <span style={{ color: 'var(--primary)' }}>]</span>
+        </div>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div className="font-mono text-muted" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: account ? 'var(--primary)' : 'var(--danger)' }}></div>
+            StudioNet: {account ? 'CONNECTED' : 'OFFLINE'}
+          </div>
+          <button 
+            className="cyber-button" 
+            style={{ width: 'auto', padding: '8px 16px' }}
+            onClick={connectWallet}
+          >
+            {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'INIT CONNECTION'}
+          </button>
+        </div>
       </header>
 
-      <main className="grid">
-        <section>
-          <div className="glass-card animate-slide-in">
-            <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>Submit for Audit</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-              Submit a project URL and smart contract code. Staking 1 GEN is required. If the AI determines your submission is valid and secure, you earn rewards. Malicious or spam submissions will have their stake burned.
-            </p>
+      <main>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>AI-Governed Security Intelligence</h1>
+          <p className="text-muted" style={{ maxWidth: '600px', margin: '0 auto' }}>
+            Submit smart contracts and target domains to the GenVM Intelligent Contract. 
+            Audits are evaluated for malicious patterns via distributed AI consensus. Staking 1 GEN is required.
+          </p>
+        </div>
+
+        <section style={{ maxWidth: '800px', margin: '0 auto 4rem auto' }}>
+          <div className="cyber-card">
+            <h2 className="font-mono text-primary" style={{ marginBottom: '1.5rem', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              &gt; SUBMIT_NEW_AUDIT_TASK
+            </h2>
             
             <form onSubmit={handleSubmit}>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Target URL</label>
+                <label className="font-mono text-muted" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem' }}>TARGET_URL</label>
                 <input 
                   type="url" 
-                  className="glass-input" 
+                  className="cyber-input" 
                   placeholder="https://github.com/..."
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
@@ -174,10 +191,10 @@ export default function Home() {
               </div>
               
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Code Snippet</label>
+                <label className="font-mono text-muted" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem' }}>PAYLOAD_SOURCE_CODE</label>
                 <textarea 
-                  className="glass-input" 
-                  placeholder="Paste code here..."
+                  className="cyber-input" 
+                  placeholder="// Paste contract code to be analyzed..."
                   rows={6}
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
@@ -187,20 +204,28 @@ export default function Home() {
               
               <button 
                 type="submit" 
-                className="glass-button" 
+                className="cyber-button" 
                 disabled={isSubmitting}
-                style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                style={{ marginTop: '0.5rem' }}
               >
-                {isSubmitting ? 'Staking GEN & Submitting...' : 'Stake 1 GEN & Submit Audit'}
+                {isSubmitting ? 'EXECUTING STAKE & SUBMIT...' : 'STAKE 1 GEN & INITIATE SCAN'}
               </button>
             </form>
           </div>
         </section>
 
         <section>
-          <h2 style={{ marginBottom: '1.5rem', paddingLeft: '1rem' }}>Recent Audits</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {audits.length === 0 && <p style={{ paddingLeft: '1rem', color: 'var(--text-muted)' }}>No audits found on network.</p>}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h2 className="font-mono" style={{ fontSize: '1.3rem' }}>Threat Intelligence Feed</h2>
+            <div className="font-mono text-primary" style={{ fontSize: '0.8rem' }}>{audits.length} RECORDS FOUND</div>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+            {audits.length === 0 && (
+              <div className="terminal-block" style={{ textAlign: 'center', padding: '3rem' }}>
+                &gt; NO_AUDITS_FOUND_ON_NETWORK
+              </div>
+            )}
             {audits.map((audit, i) => (
               <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
             ))}
