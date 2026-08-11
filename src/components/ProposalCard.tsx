@@ -6,7 +6,7 @@ interface Audit {
   analysis: string;
 }
 
-export default function ProposalCard({ audit, index }: { audit: Audit, index: number }) {
+export default function ProposalCard({ audit, index, onExecute, account }: { audit: Audit, index: number, onExecute?: () => void, account?: string | null }) {
   const getStatusClass = (status: string) => {
     switch (status.toUpperCase()) {
       case 'SECURE': return 'status-secure';
@@ -43,10 +43,22 @@ export default function ProposalCard({ audit, index }: { audit: Audit, index: nu
       </div>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
-        <span style={{ color: 'var(--text-muted)' }}>Escrow Outcome:</span>
-        <span className={getPayoutClass(audit.payoutStatus)}>
-          {audit.payoutStatus === 'Pending' ? 'Awaiting consensus...' : audit.payoutStatus}
-        </span>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', width: '100%' }}>
+          <span style={{ color: 'var(--text-muted)' }}>Escrow Outcome:</span>
+          <span className={getPayoutClass(audit.payoutStatus)}>
+            {audit.payoutStatus === 'Pending' ? 'Awaiting consensus...' : audit.payoutStatus}
+          </span>
+          
+          {audit.status === 'Pending' && account && onExecute && (
+            <button 
+              className="glass-button" 
+              style={{ marginLeft: 'auto', padding: '0.4rem 1rem', fontSize: '0.8rem' }}
+              onClick={onExecute}
+            >
+              Trigger AI Consensus
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

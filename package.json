@@ -9,9 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "genlayer-js": "^0.0.12",
     "next": "16.3.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "viem": "^2.21.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
