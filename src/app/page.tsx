@@ -169,9 +169,9 @@ export default function Home() {
         value: BigInt(0),
       });
       alert("AI Evaluation triggered! Waiting for consensus...");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Error triggering AI evaluation.");
+      alert(`Error triggering AI evaluation:\n\n${error?.message || JSON.stringify(error) || String(error)}`);
     }
   };
 
