@@ -146,9 +146,9 @@ export default function Home() {
         fetchAudits();
         updateBalance(account);
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Error submitting audit.");
+      alert(`Error submitting audit:\n\n${error?.message || JSON.stringify(error) || String(error)}`);
     } finally {
       setIsSubmitting(false);
     }
