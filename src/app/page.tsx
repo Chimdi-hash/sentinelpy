@@ -174,106 +174,154 @@ export default function Home() {
   };
 
   return (
-    <>
-      <div className="bg-orb orb-1"></div>
-      <div className="bg-orb orb-2"></div>
-      
-      <div className="container animate-slide-up">
-        <header className="header">
-          <div className="logo">
-            <span className="logo-icon">❖</span> Sentinelpy
-          </div>
-          
-          <div className="wallet-info">
-            {account ? (
-              <>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                  <span className="balance">{balance} GEN</span>
-                  <span className="address">{`${account.slice(0, 6)}...${account.slice(-4)}`}</span>
-                </div>
-                <button className="btn btn-danger" onClick={disconnectWallet}>Disconnect</button>
-              </>
-            ) : (
-              <button className="btn btn-primary" onClick={connectWallet}>
-                Connect Wallet
+    <div className="dashboard-layout">
+      {/* Top Navigation Bar */}
+      <header className="topbar">
+        <div className="brand">
+          <div className="brand-icon"></div>
+          NEXUS DEFENSE <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '400' }}>// CYBER_SEC DASHBOARD</span>
+        </div>
+        
+        <div className="nav-links">
+          <div className="nav-item active">Overview</div>
+          <div className="nav-item">Threat Intelligence</div>
+          <div className="nav-item">Smart Contracts</div>
+          <div className="nav-item">Audit Logs</div>
+        </div>
+        
+        <div>
+          {account ? (
+            <div className="wallet-box">
+              <div className="wallet-balance">
+                <span className="status-dot active"></span>
+                {balance} GEN
+              </div>
+              <div className="wallet-address font-mono">
+                {`${account.slice(0, 6)}...${account.slice(-4)}`}
+              </div>
+              <button 
+                className="cyber-button secondary" 
+                style={{ padding: '0.3rem 0.6rem', width: 'auto', fontSize: '0.7rem' }}
+                onClick={disconnectWallet}
+              >
+                DISCONNECT
               </button>
-            )}
-          </div>
-        </header>
+            </div>
+          ) : (
+            <button className="cyber-button" style={{ width: 'auto' }} onClick={connectWallet}>
+              CONNECT NODE
+            </button>
+          )}
+        </div>
+      </header>
 
-        <main>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h1 className="text-gradient" style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>
-              AI-Governed Security Intelligence
-            </h1>
-            <p className="text-muted" style={{ maxWidth: '600px', margin: '0 auto', fontSize: '1.1rem', lineHeight: '1.6' }}>
-              Submit smart contracts and target domains to the GenVM Intelligent Contract. 
-              Audits are evaluated for malicious patterns via distributed AI consensus.
-            </p>
+      {/* Main Dashboard Content */}
+      <main className="main-content">
+        
+        {/* Top KPI Cards (Static placeholders matching Concept B design) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+          <div className="cyber-panel" style={{ padding: '1.5rem' }}>
+            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL CONTRACTS SECURED</div>
+            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>4,129 <span className="text-success" style={{ fontSize: '1rem', marginLeft: '0.5rem' }}>+8.1%</span></div>
           </div>
+          <div className="cyber-panel purple-accent" style={{ padding: '1.5rem' }}>
+            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>ACTIVE THREATS</div>
+            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>19 <span className="text-danger" style={{ fontSize: '1rem', marginLeft: '0.5rem' }}>Critical</span></div>
+          </div>
+          <div className="cyber-panel" style={{ padding: '1.5rem' }}>
+            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>SECURITY SCORE</div>
+            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>94/100 <span className="text-success" style={{ fontSize: '1rem', marginLeft: '0.5rem' }}>Stable</span></div>
+          </div>
+          <div className="cyber-panel" style={{ padding: '1.5rem' }}>
+            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>NETWORK HASH (GEN)</div>
+            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>128.6 <span className="text-muted" style={{ fontSize: '1rem' }}>EH/s</span></div>
+          </div>
+        </div>
 
-          <section style={{ maxWidth: '800px', margin: '0 auto 4rem auto' }}>
-            <div className="glass-panel">
-              <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                Initiate New Audit
-              </h2>
-              
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label className="form-label">Target URL</label>
+        <div className="dashboard-grid">
+          
+          {/* Left Column: Submission Form */}
+          <section>
+            <div className="cyber-panel purple-accent">
+              <div className="panel-header">
+                <div className="panel-title text-purple">INITIATE THREAT SCAN</div>
+              </div>
+              <div className="panel-body">
+                <form onSubmit={handleSubmit}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    TARGET URL IDENTIFIER
+                  </label>
                   <input 
                     type="url" 
-                    className="form-input" 
+                    className="cyber-input" 
                     placeholder="https://github.com/..."
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     required 
                   />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Payload / Source Code</label>
+                  
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    PAYLOAD / SOURCE CODE
+                  </label>
                   <textarea 
-                    className="form-input" 
-                    placeholder="Paste the contract code to be analyzed..."
-                    rows={6}
+                    className="cyber-input" 
+                    placeholder="Paste contract code to be analyzed..."
+                    rows={8}
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     required
                   ></textarea>
-                </div>
-                
-                <button 
-                  type="submit" 
-                  className="btn btn-primary" 
-                  style={{ width: '100%', padding: '1rem', fontSize: '1.1rem' }}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Staking 1 GEN & Submitting...' : 'Stake 1 GEN & Submit Audit'}
-                </button>
-              </form>
+                  
+                  <button 
+                    type="submit" 
+                    className="cyber-button" 
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'INITIALIZING SCAN...' : 'STAKE 1 GEN & RUN SECURITY AUDIT'}
+                  </button>
+                  <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Cost: 1.00 GEN • AI Consensus Required
+                  </div>
+                </form>
+              </div>
             </div>
           </section>
 
+          {/* Right Column: Feed / Contracts list */}
           <section>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <h2 style={{ fontSize: '2rem' }}>Threat Intelligence Feed</h2>
-              <div className="badge badge-secure">{audits.length} Audits Indexed</div>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
-              {audits.length === 0 && (
-                <div className="glass-panel" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
-                  No audits found on the network.
-                </div>
-              )}
-              {audits.map((audit, i) => (
-                <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
-              ))}
+            <div className="cyber-panel">
+              <div className="panel-header">
+                <div className="panel-title text-cyan">ACTIVE SMART CONTRACTS</div>
+                <div className="text-cyan font-mono" style={{ fontSize: '0.8rem' }}>{audits.length} Records Indexed</div>
+              </div>
+              <div className="panel-body" style={{ padding: 0 }}>
+                {audits.length === 0 ? (
+                  <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    No contracts actively monitored in this segment.
+                  </div>
+                ) : (
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th style={{ padding: '1rem 1.5rem' }}>Contract Target</th>
+                        <th style={{ padding: '1rem 1.5rem' }}>Risk Level</th>
+                        <th style={{ padding: '1rem 1.5rem' }}>Escrow Status</th>
+                        <th style={{ padding: '1rem 1.5rem' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {audits.map((audit, i) => (
+                        <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           </section>
-        </main>
-      </div>
-    </>
+
+        </div>
+      </main>
+    </div>
   );
 }

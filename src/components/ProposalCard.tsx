@@ -1,3 +1,5 @@
+import React from 'react';
+
 export interface Audit {
   id: number;
   targetUrl: string;
@@ -7,65 +9,79 @@ export interface Audit {
 }
 
 export default function ProposalCard({ audit, index, onExecute, account }: { audit: Audit, index: number, onExecute?: () => void, account?: string | null }) {
-  const getStatusClass = (status: string) => {
-    switch (status?.toUpperCase()) {
-      case 'SECURE': return 'badge-secure';
-      case 'MALICIOUS': return 'badge-malicious';
-      default: return 'badge-pending';
-    }
-  };
-
-  const getPayoutClass = (status: string) => {
-    switch (status?.toUpperCase()) {
-      case 'REWARDED': return 'text-primary';
-      case 'BURNED': return 'text-muted';
-      default: return 'text-muted';
-    }
-  };
-
+  
+  // Try to determine risk level from status or analysis
+  const isMalicious = audit.status?.toUpperCase() === 'MALICIOUS';
+  const isSecure = audit.status?.toUpperCase() === 'SECURE';
+  
+  const riskLabel = isMalicious ? 'High' : (isSecure ? 'Low' : 'Medium');
+  const riskClass = isMalicious ? 'danger' : (isSecure ? 'success' : 'warning');
+  
+  const isPending = audit.status === 'Pending';
+  
   return (
-    <div 
-      className="glass-panel animate-slide-up"
-      style={{ animationDelay: `${index * 0.1}s` }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-        <h3 style={{ fontSize: '1.2rem', wordBreak: 'break-all', paddingRight: '1rem', fontWeight: '500' }}>
-          Target: <span className="text-primary">{audit.targetUrl}</span>
-        </h3>
-        <span className={`badge ${getStatusClass(audit.status)}`}>
-          {audit.status}
-        </span>
-      </div>
-      
-      <div style={{ 
-        background: 'rgba(0, 0, 0, 0.3)', 
-        borderRadius: '12px', 
-        padding: '1.5rem', 
-        marginBottom: '1.5rem',
-        border: '1px solid var(--glass-border)'
-      }}>
-        <p style={{ marginBottom: '0.8rem', fontWeight: '600', color: 'var(--primary)', letterSpacing: '0.5px' }}>GenVM Analysis Output</p>
-        <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', color: 'var(--text-muted)' }}>{audit.analysis}</p>
-      </div>
-      
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', width: '100%' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Escrow Settlement:</span>
-          <span className={`${getPayoutClass(audit.payoutStatus)}`} style={{ fontWeight: '600', fontSize: '1rem' }}>
+    <>
+      {/* Main Row */}
+      <tr style={{ background: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+        <td style={{ padding: '1.25rem 1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span className="text-muted">❖</span>
+            <span style={{ wordBreak: 'break-all', maxWidth: '250px', display: 'inline-block' }} className="font-mono">{audit.targetUrl}</span>
+          </div>
+        </td>
+        
+        <td style={{ padding: '1.25rem 1.5rem' }}>
+          <span style={{ 
+            color: `var(--${riskClass})`, 
+            border: `1px solid rgba(var(--${riskClass}-rgb, 255,255,255), 0.3)`, 
+            padding: '0.25rem 0.75rem', 
+            borderRadius: '4px',
+            fontSize: '0.75rem',
+            textTransform: 'uppercase'
+          }}>
+            {isPending ? 'Analyzing' : riskLabel}
+          </span>
+        </td>
+        
+        <td style={{ padding: '1.25rem 1.5rem' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span className={`status-dot ${isPending ? 'inactive' : 'active'}`}></span>
             {audit.payoutStatus === 'Pending' ? 'Awaiting Consensus' : audit.payoutStatus}
           </span>
-          
-          {audit.status === 'Pending' && account && onExecute && (
+        </td>
+        
+        <td style={{ padding: '1.25rem 1.5rem' }}>
+          {isPending && account && onExecute ? (
             <button 
-              className="btn btn-primary" 
-              style={{ marginLeft: 'auto', padding: '0.6rem 1.2rem', fontSize: '0.9rem' }}
+              className="cyber-button secondary" 
+              style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', width: 'auto' }}
               onClick={onExecute}
             >
-              Initialize Consensus
+              Audit ⯆
             </button>
+          ) : (
+            <span className="text-muted" style={{ fontSize: '0.85rem' }}>Monitored</span>
           )}
-        </div>
-      </div>
-    </div>
+        </td>
+      </tr>
+      
+      {/* Expandable Analysis Details (Always visible for now as a sub-row) */}
+      <tr>
+        <td colSpan={4} style={{ padding: '0 1.5rem 1.5rem 1.5rem', borderBottom: '1px solid var(--panel-border)' }}>
+          <div style={{ 
+            background: 'rgba(0, 0, 0, 0.4)', 
+            padding: '1rem', 
+            borderRadius: '6px',
+            borderLeft: `2px solid ${isMalicious ? 'var(--danger)' : 'var(--primary-cyan)'}`,
+            fontFamily: 'monospace',
+            fontSize: '0.8rem',
+            color: 'var(--text-muted)'
+          }}>
+            <div style={{ color: 'var(--primary-cyan)', marginBottom: '0.5rem' }}>&gt; GenVM Analysis Trace:</div>
+            <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{audit.analysis}</div>
+          </div>
+        </td>
+      </tr>
+    </>
   );
 }
