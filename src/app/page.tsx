@@ -89,7 +89,8 @@ export default function Home() {
   useEffect(() => {
     if (readClient && contractAddress) {
       fetchAudits();
-      const interval = setInterval(() => fetchAudits(), 5000);
+      // Increased from 5s to 15s to prevent GenLayer testnet RPC rate limiting
+      const interval = setInterval(() => fetchAudits(), 15000);
       return () => clearInterval(interval);
     }
   }, [readClient, contractAddress, fetchAudits]);
