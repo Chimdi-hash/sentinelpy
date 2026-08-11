@@ -173,6 +173,8 @@ export default function Home() {
     }
   };
 
+  const [activeTab, setActiveTab] = useState('overview');
+
   return (
     <div className="dashboard-layout">
       {/* Top Navigation Bar */}
@@ -183,10 +185,10 @@ export default function Home() {
         </div>
         
         <div className="nav-links">
-          <div className="nav-item active">Overview</div>
-          <div className="nav-item">Threat Intelligence</div>
-          <div className="nav-item">Smart Contracts</div>
-          <div className="nav-item">Audit Logs</div>
+          <div className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</div>
+          <div className={`nav-item ${activeTab === 'threats' ? 'active' : ''}`} onClick={() => setActiveTab('threats')}>Threat Intelligence</div>
+          <div className={`nav-item ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => setActiveTab('contracts')}>Smart Contracts</div>
+          <div className={`nav-item ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>Audit Logs</div>
         </div>
         
         <div>
@@ -201,7 +203,7 @@ export default function Home() {
               </div>
               <button 
                 className="cyber-button secondary" 
-                style={{ padding: '0.3rem 0.6rem', width: 'auto', fontSize: '0.7rem' }}
+                style={{ padding: '0.2rem 0.4rem', width: 'auto', fontSize: '0.65rem' }}
                 onClick={disconnectWallet}
               >
                 DISCONNECT
@@ -217,110 +219,120 @@ export default function Home() {
 
       {/* Main Dashboard Content */}
       <main className="main-content">
+        {activeTab === 'overview' && (
+          <>
+            {/* Top KPI Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div className="cyber-panel" style={{ padding: '1rem' }}>
+                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL AUDITS PROCESSED</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.length}</div>
+              </div>
+              <div className="cyber-panel purple-accent" style={{ padding: '1rem' }}>
+                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>THREATS DETECTED</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.filter(a => a.status?.toUpperCase() === 'MALICIOUS').length} <span className="text-danger" style={{ fontSize: '0.8rem', marginLeft: '0.5rem' }}>Critical</span></div>
+              </div>
+              <div className="cyber-panel" style={{ padding: '1rem' }}>
+                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>NETWORK CONSENSUS</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>Active <span className="text-success" style={{ fontSize: '0.8rem', marginLeft: '0.5rem' }}>GenVM</span></div>
+              </div>
+              <div className="cyber-panel" style={{ padding: '1rem' }}>
+                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL GEN STAKED</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.length}.0 <span className="text-muted" style={{ fontSize: '0.8rem' }}>GEN</span></div>
+              </div>
+            </div>
+
+            <div className="dashboard-grid">
+              
+              {/* Left Column: Submission Form */}
+              <section>
+                <div className="cyber-panel purple-accent">
+                  <div className="panel-header">
+                    <div className="panel-title text-purple">INITIATE THREAT SCAN</div>
+                  </div>
+                  <div className="panel-body">
+                    <form onSubmit={handleSubmit}>
+                      <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        TARGET URL IDENTIFIER
+                      </label>
+                      <input 
+                        type="url" 
+                        className="cyber-input" 
+                        placeholder="https://github.com/..."
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        required 
+                      />
+                      
+                      <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        PAYLOAD / SOURCE CODE
+                      </label>
+                      <textarea 
+                        className="cyber-input" 
+                        placeholder="Paste contract code to be analyzed..."
+                        rows={8}
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        required
+                      ></textarea>
+                      
+                      <button 
+                        type="submit" 
+                        className="cyber-button" 
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'INITIALIZING SCAN...' : 'STAKE 1 GEN & RUN SECURITY AUDIT'}
+                      </button>
+                      <div style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                        Cost: 1.00 GEN • AI Consensus Required
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </section>
+
+              {/* Right Column: Feed / Contracts list */}
+              <section>
+                <div className="cyber-panel">
+                  <div className="panel-header">
+                    <div className="panel-title text-cyan">ACTIVE SMART CONTRACTS</div>
+                    <div className="text-cyan font-mono" style={{ fontSize: '0.75rem' }}>{audits.length} Records Indexed</div>
+                  </div>
+                  <div className="panel-body" style={{ padding: 0 }}>
+                    {audits.length === 0 ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        No contracts actively monitored in this segment.
+                      </div>
+                    ) : (
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th style={{ padding: '0.75rem 1rem' }}>Contract Target</th>
+                            <th style={{ padding: '0.75rem 1rem' }}>Risk Level</th>
+                            <th style={{ padding: '0.75rem 1rem' }}>Escrow Status</th>
+                            <th style={{ padding: '0.75rem 1rem' }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {audits.map((audit, i) => (
+                            <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+              </section>
+            </div>
+          </>
+        )}
         
-        {/* Top KPI Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
-          <div className="cyber-panel" style={{ padding: '1.5rem' }}>
-            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL AUDITS PROCESSED</div>
-            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.length}</div>
+        {activeTab !== 'overview' && (
+          <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div className="brand-icon" style={{ margin: '0 auto 1rem auto', width: '32px', height: '32px', opacity: 0.5 }}></div>
+            <div style={{ fontSize: '1rem', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Module Initializing</div>
+            <div style={{ fontSize: '0.75rem' }}>{activeTab} data stream is currently offline.</div>
           </div>
-          <div className="cyber-panel purple-accent" style={{ padding: '1.5rem' }}>
-            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>THREATS DETECTED</div>
-            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.filter(a => a.status?.toUpperCase() === 'MALICIOUS').length} <span className="text-danger" style={{ fontSize: '1rem', marginLeft: '0.5rem' }}>Critical</span></div>
-          </div>
-          <div className="cyber-panel" style={{ padding: '1.5rem' }}>
-            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>NETWORK CONSENSUS</div>
-            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>Active <span className="text-success" style={{ fontSize: '1rem', marginLeft: '0.5rem' }}>GenVM</span></div>
-          </div>
-          <div className="cyber-panel" style={{ padding: '1.5rem' }}>
-            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL GEN STAKED</div>
-            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.length}.0 <span className="text-muted" style={{ fontSize: '1rem' }}>GEN</span></div>
-          </div>
-        </div>
-
-        <div className="dashboard-grid">
-          
-          {/* Left Column: Submission Form */}
-          <section>
-            <div className="cyber-panel purple-accent">
-              <div className="panel-header">
-                <div className="panel-title text-purple">INITIATE THREAT SCAN</div>
-              </div>
-              <div className="panel-body">
-                <form onSubmit={handleSubmit}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    TARGET URL IDENTIFIER
-                  </label>
-                  <input 
-                    type="url" 
-                    className="cyber-input" 
-                    placeholder="https://github.com/..."
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    required 
-                  />
-                  
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    PAYLOAD / SOURCE CODE
-                  </label>
-                  <textarea 
-                    className="cyber-input" 
-                    placeholder="Paste contract code to be analyzed..."
-                    rows={8}
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    required
-                  ></textarea>
-                  
-                  <button 
-                    type="submit" 
-                    className="cyber-button" 
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'INITIALIZING SCAN...' : 'STAKE 1 GEN & RUN SECURITY AUDIT'}
-                  </button>
-                  <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Cost: 1.00 GEN • AI Consensus Required
-                  </div>
-                </form>
-              </div>
-            </div>
-          </section>
-
-          {/* Right Column: Feed / Contracts list */}
-          <section>
-            <div className="cyber-panel">
-              <div className="panel-header">
-                <div className="panel-title text-cyan">ACTIVE SMART CONTRACTS</div>
-                <div className="text-cyan font-mono" style={{ fontSize: '0.8rem' }}>{audits.length} Records Indexed</div>
-              </div>
-              <div className="panel-body" style={{ padding: 0 }}>
-                {audits.length === 0 ? (
-                  <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    No contracts actively monitored in this segment.
-                  </div>
-                ) : (
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th style={{ padding: '1rem 1.5rem' }}>Contract Target</th>
-                        <th style={{ padding: '1rem 1.5rem' }}>Risk Level</th>
-                        <th style={{ padding: '1rem 1.5rem' }}>Escrow Status</th>
-                        <th style={{ padding: '1rem 1.5rem' }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {audits.map((audit, i) => (
-                        <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </div>
-          </section>
-
-        </div>
+        )}
       </main>
     </div>
   );
