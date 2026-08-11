@@ -1,4 +1,12 @@
-export default function ProposalCard({ audit, index }: { audit: any, index: number }) {
+interface Audit {
+  id: number;
+  targetUrl: string;
+  status: string;
+  payoutStatus: string;
+  analysis: string;
+}
+
+export default function ProposalCard({ audit, index }: { audit: Audit, index: number }) {
   const getStatusClass = (status: string) => {
     switch (status.toUpperCase()) {
       case 'SECURE': return 'status-secure';

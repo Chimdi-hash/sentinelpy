@@ -2,8 +2,15 @@
 
 import { useState } from 'react';
 import ProposalCard from '../components/ProposalCard';
-import { createClient } from 'genlayer-js';
 // In a real implementation we would configure viem and genlayer client here
+
+interface Audit {
+  id: number;
+  targetUrl: string;
+  status: string;
+  payoutStatus: string;
+  analysis: string;
+}
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -12,7 +19,7 @@ export default function Home() {
   const [walletConnected, setWalletConnected] = useState(false);
   
   // Mock data for display purposes
-  const [audits, setAudits] = useState([
+  const [audits, setAudits] = useState<Audit[]>([
     {
       id: 1,
       targetUrl: 'https://suspicious-dex.io',
