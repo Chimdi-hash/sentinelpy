@@ -276,12 +276,16 @@ export default function Home() {
                       ></textarea>
                       
                       <button 
-                        type="submit" 
-                        className="cyber-button" 
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? 'INITIALIZING SCAN...' : 'STAKE 1 GEN & RUN SECURITY AUDIT'}
-                      </button>
+                    type="submit" 
+                    className="cyber-button" 
+                    disabled={isSubmitting || !account}
+                    style={{ opacity: !account ? 0.5 : 1, cursor: !account ? 'not-allowed' : 'pointer' }}
+                  >
+                    {!account 
+                      ? 'CONNECT WALLET TO SCAN' 
+                      : (isSubmitting ? 'INITIALIZING SCAN...' : 'STAKE 1 GEN & RUN SECURITY AUDIT')
+                    }
+                  </button>
                       <div style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
                         Cost: 1.00 GEN • AI Consensus Required
                       </div>
