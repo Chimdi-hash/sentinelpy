@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback } from 'react';
 import ProposalCard from '../components/ProposalCard';
 import { createClient } from 'genlayer-js';
