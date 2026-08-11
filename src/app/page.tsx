@@ -179,7 +179,7 @@ export default function Home() {
       <header className="topbar">
         <div className="brand">
           <div className="brand-icon"></div>
-          NEXUS DEFENSE <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '400' }}>// CYBER_SEC DASHBOARD</span>
+          SENTINELPY <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '400' }}>// AI-GOVERNED AUDIT DASHBOARD</span>
         </div>
         
         <div className="nav-links">
@@ -218,23 +218,23 @@ export default function Home() {
       {/* Main Dashboard Content */}
       <main className="main-content">
         
-        {/* Top KPI Cards (Static placeholders matching Concept B design) */}
+        {/* Top KPI Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
           <div className="cyber-panel" style={{ padding: '1.5rem' }}>
-            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL CONTRACTS SECURED</div>
-            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>4,129 <span className="text-success" style={{ fontSize: '1rem', marginLeft: '0.5rem' }}>+8.1%</span></div>
+            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL AUDITS PROCESSED</div>
+            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.length}</div>
           </div>
           <div className="cyber-panel purple-accent" style={{ padding: '1.5rem' }}>
-            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>ACTIVE THREATS</div>
-            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>19 <span className="text-danger" style={{ fontSize: '1rem', marginLeft: '0.5rem' }}>Critical</span></div>
+            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>THREATS DETECTED</div>
+            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.filter(a => a.status?.toUpperCase() === 'MALICIOUS').length} <span className="text-danger" style={{ fontSize: '1rem', marginLeft: '0.5rem' }}>Critical</span></div>
           </div>
           <div className="cyber-panel" style={{ padding: '1.5rem' }}>
-            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>SECURITY SCORE</div>
-            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>94/100 <span className="text-success" style={{ fontSize: '1rem', marginLeft: '0.5rem' }}>Stable</span></div>
+            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>NETWORK CONSENSUS</div>
+            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>Active <span className="text-success" style={{ fontSize: '1rem', marginLeft: '0.5rem' }}>GenVM</span></div>
           </div>
           <div className="cyber-panel" style={{ padding: '1.5rem' }}>
-            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>NETWORK HASH (GEN)</div>
-            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>128.6 <span className="text-muted" style={{ fontSize: '1rem' }}>EH/s</span></div>
+            <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL GEN STAKED</div>
+            <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.length}.0 <span className="text-muted" style={{ fontSize: '1rem' }}>GEN</span></div>
           </div>
         </div>
 
