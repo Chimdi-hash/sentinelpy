@@ -222,7 +222,7 @@ export default function Home() {
         {activeTab === 'overview' && (
           <>
             {/* Top KPI Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               <div className="cyber-panel" style={{ padding: '1rem' }}>
                 <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL AUDITS PROCESSED</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.length}</div>
@@ -307,21 +307,23 @@ export default function Home() {
                         No contracts actively monitored in this segment.
                       </div>
                     ) : (
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th style={{ padding: '0.75rem 1rem' }}>Contract Target</th>
-                            <th style={{ padding: '0.75rem 1rem' }}>Risk Level</th>
-                            <th style={{ padding: '0.75rem 1rem' }}>Escrow Status</th>
-                            <th style={{ padding: '0.75rem 1rem' }}>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {audits.map((audit, i) => (
-                            <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
-                          ))}
-                        </tbody>
-                      </table>
+                      <div className="table-responsive">
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              <th style={{ padding: '0.75rem 1rem' }}>Contract Target</th>
+                              <th style={{ padding: '0.75rem 1rem' }}>Risk Level</th>
+                              <th style={{ padding: '0.75rem 1rem' }}>Escrow Status</th>
+                              <th style={{ padding: '0.75rem 1rem' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {audits.map((audit, i) => (
+                              <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
                   </div>
                 </div>
