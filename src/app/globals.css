@@ -274,7 +274,8 @@ html, body {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.75rem;
-  min-width: 600px;
+  /* Instead of a hard 600px, we allow it to shrink */
+  min-width: 100%;
 }
 .data-table th {
   text-align: left;
@@ -284,11 +285,19 @@ html, body {
   border-bottom: 1px solid var(--panel-border);
 }
 .data-table td {
-  padding: 0.75rem 0;
+  padding: 0.75rem 0.25rem;
   border-bottom: 1px solid rgba(255,255,255,0.02);
+  word-break: break-word;
 }
 .data-table tr:last-child td {
   border-bottom: none;
+}
+.table-cell {
+  padding: 0.75rem 1rem;
+}
+.details-cell {
+  padding: 0 1rem 1rem 1rem;
+  border-bottom: 1px solid var(--panel-border);
 }
 
 /* Mobile Responsiveness */
@@ -345,6 +354,48 @@ html, body {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+
+  /* Convert data-table to stacked cards on mobile */
+  .data-table thead {
+    display: none;
+  }
+  .data-table, .data-table tbody, .proposal-main-row, .proposal-details-row, .table-cell, .details-cell {
+    display: block;
+    width: 100%;
+  }
+  .proposal-main-row {
+    background: rgba(255,255,255,0.02) !important;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid var(--panel-border);
+    border-bottom: none;
+    margin-top: 1rem;
+  }
+  .table-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.75rem 1rem !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .table-cell > span, .table-cell > div, .table-cell > button {
+    text-align: right;
+  }
+  .table-cell:nth-child(1)::before { content: "Target"; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-right: 1rem; }
+  .table-cell:nth-child(2)::before { content: "Risk"; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-right: 1rem; }
+  .table-cell:nth-child(3)::before { content: "Escrow"; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-right: 1rem; }
+  .table-cell:nth-child(4)::before { content: "Action"; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-right: 1rem; }
+  
+  .proposal-details-row {
+    background: rgba(255,255,255,0.02) !important;
+    border-radius: 0 0 8px 8px;
+    border: 1px solid var(--panel-border);
+    border-top: none;
+    margin-bottom: 1rem;
+  }
+  .details-cell {
+    padding: 0 1rem 1rem 1rem !important;
+    border-bottom: none !important;
   }
 }
 

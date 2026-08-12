@@ -22,15 +22,15 @@ export default function ProposalCard({ audit, index, onExecute, account }: { aud
   return (
     <>
       {/* Main Row */}
-      <tr style={{ background: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-        <td style={{ padding: '0.75rem 1rem' }}>
+      <tr className="proposal-main-row" style={{ background: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+        <td className="table-cell">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span className="text-muted">❖</span>
-            <span style={{ wordBreak: 'break-all', maxWidth: '250px', display: 'inline-block' }} className="font-mono">{audit.targetUrl}</span>
+            <span style={{ wordBreak: 'break-all', maxWidth: '100%', display: 'inline-block' }} className="font-mono">{audit.targetUrl}</span>
           </div>
         </td>
         
-        <td style={{ padding: '0.75rem 1rem' }}>
+        <td className="table-cell">
           <span style={{ 
             color: `var(--${riskClass})`, 
             border: `1px solid rgba(var(--${riskClass}-rgb, 255,255,255), 0.3)`, 
@@ -43,7 +43,7 @@ export default function ProposalCard({ audit, index, onExecute, account }: { aud
           </span>
         </td>
         
-        <td style={{ padding: '0.75rem 1rem' }}>
+        <td className="table-cell">
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <span className={`status-dot ${isPending ? 'inactive' : 'active'}`}></span>
             {audit.payoutStatus === 'Pending' ? 'Awaiting Consensus' : (
@@ -54,7 +54,7 @@ export default function ProposalCard({ audit, index, onExecute, account }: { aud
           </span>
         </td>
         
-        <td style={{ padding: '0.75rem 1rem' }}>
+        <td className="table-cell">
           {isPending && account && onExecute ? (
             <button 
               className="cyber-button secondary" 
@@ -70,8 +70,8 @@ export default function ProposalCard({ audit, index, onExecute, account }: { aud
       </tr>
       
       {/* Expandable Analysis Details */}
-      <tr>
-        <td colSpan={4} style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid var(--panel-border)' }}>
+      <tr className="proposal-details-row">
+        <td colSpan={4} className="details-cell">
           <div style={{ 
             background: 'rgba(0, 0, 0, 0.4)', 
             padding: '0.75rem', 
