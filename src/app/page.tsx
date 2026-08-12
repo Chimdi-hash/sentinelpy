@@ -334,11 +334,96 @@ export default function Home() {
           </>
         )}
         
-        {activeTab !== 'overview' && (
-          <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <div className="brand-icon" style={{ margin: '0 auto 1rem auto', width: '32px', height: '32px', opacity: 0.5 }}></div>
-            <div style={{ fontSize: '1rem', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Module Initializing</div>
-            <div style={{ fontSize: '0.75rem' }}>{activeTab} data stream is currently offline.</div>
+        {activeTab === 'threats' && (
+          <div className="cyber-panel purple-accent" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <div className="panel-header">
+              <div className="panel-title text-purple">THREAT INTELLIGENCE DATABASE</div>
+              <div className="text-purple font-mono" style={{ fontSize: '0.75rem' }}>{audits.filter(a => a.status?.toUpperCase() === 'MALICIOUS').length} Threats Isolated</div>
+            </div>
+            <div className="panel-body" style={{ padding: 0 }}>
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th style={{ padding: '0.75rem 1rem' }}>Malicious Target</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Risk Level</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Escrow Status</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {audits.filter(a => a.status?.toUpperCase() === 'MALICIOUS').map((audit, i) => (
+                      <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
+                    ))}
+                    {audits.filter(a => a.status?.toUpperCase() === 'MALICIOUS').length === 0 && (
+                      <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No threats detected in the registry.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'contracts' && (
+          <div className="cyber-panel" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <div className="panel-header">
+              <div className="panel-title text-cyan">VERIFIED SMART CONTRACTS</div>
+              <div className="text-cyan font-mono" style={{ fontSize: '0.75rem' }}>{audits.filter(a => a.status?.toUpperCase() === 'SECURE').length} Verified Safe</div>
+            </div>
+            <div className="panel-body" style={{ padding: 0 }}>
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th style={{ padding: '0.75rem 1rem' }}>Secure Target</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Risk Level</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Escrow Status</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {audits.filter(a => a.status?.toUpperCase() === 'SECURE').map((audit, i) => (
+                      <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
+                    ))}
+                    {audits.filter(a => a.status?.toUpperCase() === 'SECURE').length === 0 && (
+                      <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No verified contracts in the registry.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'logs' && (
+          <div className="cyber-panel" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <div className="panel-header">
+              <div className="panel-title text-muted">GLOBAL AUDIT LEDGER</div>
+              <div className="text-muted font-mono" style={{ fontSize: '0.75rem' }}>{audits.length} Total Records</div>
+            </div>
+            <div className="panel-body" style={{ padding: 0 }}>
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th style={{ padding: '0.75rem 1rem' }}>Transaction / Target</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>AI Adjudication</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Escrow Resolution</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {audits.map((audit, i) => (
+                      <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
+                    ))}
+                    {audits.length === 0 && (
+                      <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Ledger is empty.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
       </main>
