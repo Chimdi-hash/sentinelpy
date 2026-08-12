@@ -315,10 +315,21 @@ body {
   .wallet-box {
     flex-wrap: wrap;
     justify-content: center;
+    width: 100%;
   }
   
-  .cyber-button {
-    width: 100% !important;
+  .wallet-box button {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  form .cyber-button {
+    width: 100%;
+  }
+
+  /* Don't stretch the Audit button in the table */
+  .table-responsive .cyber-button {
+    width: auto !important;
   }
 
   .main-content {
