@@ -18,9 +18,6 @@ class Sentinelpy(gl.Contract):
     def __init__(self):
         self.audit_counter = u256(0)
         self.project_counter = u256(0)
-        self.audits = TreeMap()
-        self.projects = TreeMap()
-        self.project_balances = TreeMap()
 
     @gl.public.write.payable
     def register_project(self, target_url: str) -> u256:
