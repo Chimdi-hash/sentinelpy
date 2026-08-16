@@ -47,8 +47,9 @@ export default function ProposalCard({ audit, index, onExecute, account }: { aud
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <span className={`status-dot ${isPending ? 'inactive' : 'active'}`}></span>
             {audit.payoutStatus === 'Pending' ? 'Awaiting Consensus' : (
-              audit.payoutStatus.toUpperCase() === 'BURNED' ? 'BURNED (1.0 GEN)' :
-              audit.payoutStatus.toUpperCase() === 'REWARDED' ? 'REWARDED (1.5 GEN)' :
+              audit.payoutStatus.toUpperCase() === 'STAKE_SLASHED' ? 'STAKE BURNED (0.1 GEN)' :
+              audit.payoutStatus.toUpperCase() === 'BOUNTY_PAID' ? 'BOUNTY CLAIMED (1.1 GEN)' :
+              audit.payoutStatus.toUpperCase() === 'POOL_DEPLETED' ? 'POOL DEPLETED (REFUNDED)' :
               audit.payoutStatus
             )}
           </span>

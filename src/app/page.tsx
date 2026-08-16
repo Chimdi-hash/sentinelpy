@@ -8,23 +8,31 @@ import { custom } from 'viem';
 
 export interface Audit {
   id: number;
+  projectId: number;
   targetUrl: string;
   status: string;
   payoutStatus: string;
   analysis: string;
-  target_url?: string;
-  payout_status?: string;
+}
+
+export interface Project {
+  id: number;
+  targetUrl: string;
+  sponsor: string;
+  poolBalance: string;
 }
 
 export default function Home() {
   const [url, setUrl] = useState('');
-  const [code, setCode] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fundAmount, setFundAmount] = useState('5.0');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [isAuditingId, setIsAuditingId] = useState<number | null>(null);
   
   const [account, setAccount] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
   
   const [audits, setAudits] = useState<Audit[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [readClient, setReadClient] = useState<any>(null);
@@ -55,10 +63,35 @@ export default function Home() {
     }
   };
 
-  const fetchAudits = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (!readClient || !contractAddress) return;
     try {
-      const fetched = [];
+      // Fetch Projects
+      const fetchedProjects = [];
+      let p = 0;
+      while (true) {
+        try {
+          const projStr = await readClient.readContract({
+             address: contractAddress,
+             functionName: 'get_project',
+             args: [p]
+          });
+          const proj = JSON.parse(projStr as string);
+          fetchedProjects.push({ 
+            id: p, 
+            targetUrl: proj.target_url || proj.targetUrl, 
+            sponsor: proj.sponsor,
+            poolBalance: (parseInt(proj.pool_balance || "0") / 1e18).toFixed(2)
+          });
+          p++;
+        } catch (e) {
+          break;
+        }
+      }
+      setProjects(fetchedProjects.reverse());
+
+      // Fetch Audits
+      const fetchedAudits = [];
       let i = 0;
       while (true) {
         try {
@@ -68,8 +101,9 @@ export default function Home() {
              args: [i]
           });
           const audit = JSON.parse(auditStr as string);
-          fetched.push({ 
+          fetchedAudits.push({ 
             id: i, 
+            projectId: parseInt(audit.project_id || audit.projectId || "0"),
             targetUrl: audit.target_url || audit.targetUrl, 
             status: audit.status, 
             payoutStatus: audit.payout_status || audit.payoutStatus || audit.payout_status, 
@@ -80,20 +114,19 @@ export default function Home() {
           break;
         }
       }
-      setAudits(fetched.reverse());
+      setAudits(fetchedAudits.reverse());
     } catch (err) {
-      console.error("Failed to fetch audits", err);
+      console.error("Failed to fetch data", err);
     }
   }, [readClient, contractAddress]);
 
   useEffect(() => {
     if (readClient && contractAddress) {
-      fetchAudits();
-      // Increased from 5s to 15s to prevent GenLayer testnet RPC rate limiting
-      const interval = setInterval(() => fetchAudits(), 15000);
+      fetchData();
+      const interval = setInterval(() => fetchData(), 15000);
       return () => clearInterval(interval);
     }
-  }, [readClient, contractAddress, fetchAudits]);
+  }, [readClient, contractAddress, fetchData]);
 
   const connectWallet = async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,7 +144,6 @@ export default function Home() {
           account: address,
           transport: custom(provider),
         });
-        // We don't need to call .connect() if passing transport directly
         setWriteClient(wc);
       } catch (err) {
         console.error("Failed to connect wallet", err);
@@ -127,32 +159,59 @@ export default function Home() {
     setWriteClient(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegisterProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!account || !writeClient) {
       alert("Please connect your wallet first.");
       return;
     }
     
-    setIsSubmitting(true);
+    setIsRegistering(true);
+    try {
+      const fundWei = BigInt(parseFloat(fundAmount) * 1e18);
+      await writeClient.writeContract({
+        address: contractAddress,
+        functionName: 'register_project',
+        args: [url],
+        value: fundWei,
+      });
+      setUrl('');
+      setTimeout(() => {
+        fetchData();
+        updateBalance(account);
+      }, 2000);
+    } catch (error: any) {
+      console.error(error);
+      alert(`Error registering project:\n\n${error?.message || JSON.stringify(error) || String(error)}`);
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const handleSubmitAudit = async (projectId: number) => {
+    if (!account || !writeClient) {
+      alert("Please connect your wallet first.");
+      return;
+    }
+    
+    setIsAuditingId(projectId);
     try {
       await writeClient.writeContract({
         address: contractAddress,
         functionName: 'submit_audit',
-        args: [url, code],
-        value: BigInt("1000000000000000000"), // 1 GEN
+        args: [projectId],
+        value: BigInt("100000000000000000"), // 0.1 GEN stake
       });
-      setUrl('');
-      setCode('');
+      alert("Audit request submitted successfully! Find it in the active audits list to execute.");
       setTimeout(() => {
-        fetchAudits();
+        fetchData();
         updateBalance(account);
       }, 2000);
     } catch (error: any) {
       console.error(error);
       alert(`Error submitting audit:\n\n${error?.message || JSON.stringify(error) || String(error)}`);
     } finally {
-      setIsSubmitting(false);
+      setIsAuditingId(null);
     }
   };
 
@@ -183,13 +242,13 @@ export default function Home() {
       <header className="topbar">
         <div className="brand" style={{ fontSize: '0.9rem' }}>
           <div className="brand-icon" style={{ width: '16px', height: '16px' }}></div>
-          SENTINELPY <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '400' }}>// AI-GOVERNED AUDIT DASHBOARD</span>
+          SENTINELPY <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '400' }}>// BUG BOUNTY MARKETPLACE</span>
         </div>
         
         <div className="nav-links">
           <div className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</div>
           <div className={`nav-item ${activeTab === 'threats' ? 'active' : ''}`} onClick={() => setActiveTab('threats')}>Threat Intelligence</div>
-          <div className={`nav-item ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => setActiveTab('contracts')}>Smart Contracts</div>
+          <div className={`nav-item ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => setActiveTab('contracts')}>Verified Projects</div>
           <div className={`nav-item ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>Audit Logs</div>
         </div>
         
@@ -226,8 +285,8 @@ export default function Home() {
             {/* Top KPI Cards */}
             <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               <div className="cyber-panel" style={{ padding: '1rem' }}>
-                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL AUDITS PROCESSED</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.length}</div>
+                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>SPONSORED PROJECTS</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{projects.length}</div>
               </div>
               <div className="cyber-panel purple-accent" style={{ padding: '1rem' }}>
                 <div className="panel-title" style={{ marginBottom: '0.5rem' }}>THREATS DETECTED</div>
@@ -238,8 +297,10 @@ export default function Home() {
                 <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>Active <span className="text-success" style={{ fontSize: '0.8rem', marginLeft: '0.5rem' }}>GenVM</span></div>
               </div>
               <div className="cyber-panel" style={{ padding: '1rem' }}>
-                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL GEN STAKED</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.length}.0 <span className="text-muted" style={{ fontSize: '0.8rem' }}>GEN</span></div>
+                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL BOUNTY POOL</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>
+                  {projects.reduce((acc, p) => acc + parseFloat(p.poolBalance), 0).toFixed(2)} <span className="text-muted" style={{ fontSize: '0.8rem' }}>GEN</span>
+                </div>
               </div>
             </div>
 
@@ -249,47 +310,48 @@ export default function Home() {
               <section>
                 <div className="cyber-panel purple-accent">
                   <div className="panel-header">
-                    <div className="panel-title text-purple">INITIATE THREAT SCAN</div>
+                    <div className="panel-title text-purple">SPONSOR A PROJECT</div>
                   </div>
                   <div className="panel-body">
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleRegisterProject}>
                       <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        TARGET URL IDENTIFIER
+                        TARGET URL IDENTIFIER (GITHUB RAW / IPFS)
                       </label>
                       <input 
                         type="url" 
                         className="cyber-input" 
-                        placeholder="https://github.com/..."
+                        placeholder="https://raw.githubusercontent.com/..."
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                         required 
                       />
                       
                       <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        PAYLOAD / SOURCE CODE
+                        INITIAL BOUNTY POOL (GEN)
                       </label>
-                      <textarea 
+                      <input 
+                        type="number" 
+                        step="0.1"
+                        min="0.1"
                         className="cyber-input" 
-                        placeholder="Paste contract code to be analyzed..."
-                        rows={8}
-                        value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                        required
-                      ></textarea>
+                        value={fundAmount}
+                        onChange={(e) => setFundAmount(e.target.value)}
+                        required 
+                      />
                       
                       <button 
-                    type="submit" 
-                    className="cyber-button" 
-                    disabled={isSubmitting || !account}
-                    style={{ opacity: !account ? 0.5 : 1, cursor: !account ? 'not-allowed' : 'pointer' }}
-                  >
-                    {!account 
-                      ? 'CONNECT WALLET TO SCAN' 
-                      : (isSubmitting ? 'INITIALIZING SCAN...' : 'STAKE 1 GEN & RUN SECURITY AUDIT')
-                    }
-                  </button>
+                        type="submit" 
+                        className="cyber-button" 
+                        disabled={isRegistering || !account}
+                        style={{ opacity: !account ? 0.5 : 1, cursor: !account ? 'not-allowed' : 'pointer' }}
+                      >
+                        {!account 
+                          ? 'CONNECT WALLET TO SPONSOR' 
+                          : (isRegistering ? 'REGISTERING...' : `REGISTER & DEPOSIT ${fundAmount} GEN`)
+                        }
+                      </button>
                       <div style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                        Cost: 1.00 GEN • AI Consensus Required
+                        Funds are locked in escrow for successful bug hunters.
                       </div>
                     </form>
                   </div>
@@ -300,13 +362,71 @@ export default function Home() {
               <section>
                 <div className="cyber-panel">
                   <div className="panel-header">
-                    <div className="panel-title text-cyan">ACTIVE SMART CONTRACTS</div>
-                    <div className="text-cyan font-mono" style={{ fontSize: '0.75rem' }}>{audits.length} Records Indexed</div>
+                    <div className="panel-title text-cyan">ACTIVE BUG BOUNTIES</div>
+                    <div className="text-cyan font-mono" style={{ fontSize: '0.75rem' }}>{projects.length} Projects Indexed</div>
+                  </div>
+                  <div className="panel-body" style={{ padding: 0 }}>
+                    {projects.length === 0 ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        No sponsored projects available for audit.
+                      </div>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              <th style={{ padding: '0.75rem 1rem' }}>Project Target</th>
+                              <th style={{ padding: '0.75rem 1rem' }}>Sponsor</th>
+                              <th style={{ padding: '0.75rem 1rem' }}>Bounty Pool</th>
+                              <th style={{ padding: '0.75rem 1rem' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {projects.map((proj, i) => (
+                              <tr key={proj.id} className="proposal-main-row" style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                                <td className="table-cell">
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span className="text-muted">❖</span>
+                                    <span style={{ wordBreak: 'break-all', maxWidth: '100%', display: 'inline-block' }} className="font-mono">{proj.targetUrl}</span>
+                                  </div>
+                                </td>
+                                <td className="table-cell font-mono text-muted" style={{ fontSize: '0.7rem' }}>
+                                  {proj.sponsor.slice(0,6)}...{proj.sponsor.slice(-4)}
+                                </td>
+                                <td className="table-cell">
+                                  <span style={{ color: 'var(--success)' }}>{proj.poolBalance} GEN</span>
+                                </td>
+                                <td className="table-cell">
+                                  <button 
+                                    className="cyber-button" 
+                                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', width: 'auto' }}
+                                    onClick={() => handleSubmitAudit(proj.id)}
+                                    disabled={isAuditingId === proj.id || !account}
+                                  >
+                                    {isAuditingId === proj.id ? '...' : 'Hunt Bugs (Stake 0.1)'}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            </div>
+            
+            {/* Active Audits Section */}
+            <div className="cyber-panel" style={{ marginTop: '1.5rem' }}>
+                  <div className="panel-header">
+                    <div className="panel-title text-muted">PENDING & COMPLETED AUDITS</div>
+                    <div className="text-muted font-mono" style={{ fontSize: '0.75rem' }}>{audits.length} Audits Indexed</div>
                   </div>
                   <div className="panel-body" style={{ padding: 0 }}>
                     {audits.length === 0 ? (
                       <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                        No contracts actively monitored in this segment.
+                        No audits have been submitted yet.
                       </div>
                     ) : (
                       <div className="table-responsive">
@@ -329,8 +449,6 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-              </section>
-            </div>
           </>
         )}
         

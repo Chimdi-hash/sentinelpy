@@ -4,26 +4,28 @@
 ![Framework](https://img.shields.io/badge/Framework-Next.js%2014-black)
 ![AI Engine](https://img.shields.io/badge/AI_Consensus-GenVM-purple)
 
-SentinelPy is a decentralized security platform built on **GenLayer** that uses Intelligent Smart Contracts to autonomously audit code, detect vulnerabilities, and financially reward or penalize auditors without human intervention.
+SentinelPy is a decentralized security platform built on **GenLayer** that uses Intelligent Smart Contracts to autonomously audit code, detect vulnerabilities, and financially reward or penalize auditors without human intervention. 
 
-## 🚀 The Vision
+## 🚀 The Vision: A Solvent Dual-Role Marketplace
 
-SentinelPy reimagines the traditional bug bounty model by replacing human judges with GenLayer's **GenVM** artificial intelligence. 
+SentinelPy reimagines the traditional bug bounty model by replacing human judges with GenLayer's **GenVM** artificial intelligence and establishing a solvent, sponsor-funded economy.
 
-Security researchers and developers can submit smart contract source code to the platform along with a staked bounty in GEN tokens. Once submitted, the SentinelPy Intelligent Smart Contract autonomously reads the source code, analyzes its logic for critical vulnerabilities, and reaches a network consensus on the code's safety.
+1. **Sponsors (Project Owners):** Register their project's codebase (via raw GitHub or IPFS URL) and deposit GEN tokens to fund a Bounty Pool.
+2. **Auditors (Security Researchers):** Request AI audits against registered projects by staking a small fee (0.1 GEN).
+3. **AI Adjudicator (GenVM):** The Intelligent Smart Contract *autonomously fetches* the target URL's source code, completely preventing user-manipulated payloads. The network of GenVM nodes analyzes the code, demanding exact, substantive evidence (vulnerability type and line snippet).
 
 ## ✨ Core Features
 
-* **AI-Powered Code Audits:** Leverages GenLayer's LLM consensus to trace and analyze smart contract payloads (like Solidity or Python) for logic flaws such as reentrancy or prompt injection attacks.
-* **Trustless Escrow System:** 
-  * **Malicious (Vulnerable):** If the AI detects a vulnerability, the contract is flagged as a threat and the user's staked tokens are **Burned** (-1.0 GEN).
-  * **Secure (Safe):** If the AI verifies the code is safe, the submitter is **Rewarded** with their stake plus a bonus (+1.5 GEN).
-* **Real-time Threat Intelligence:** A dashboard that indexes and categorizes all evaluated contracts into Malicious Threats, Verified Contracts, and a Global Audit Ledger.
+* **Authenticated Code Fetching:** Users cannot copy/paste code (which prevents prompt injection). The Intelligent Contract leverages `gl.get_webpage(url)` to securely pull the exact codebase for validators to analyze.
+* **Substantive AI Consensus:** Instead of a simple "Secure/Malicious" tag, the GenVM consensus mandates strict JSON schemas proving exactly which line caused the vulnerability.
+* **Solvent Escrow System:** 
+  * **Vulnerability Found:** The AI verifies a vulnerability. The Auditor is rewarded with a **Bounty (+1.0 GEN)** drawn directly from the Sponsor's pool, and their stake is returned.
+  * **False Alarm (Secure):** The AI verifies the code is safe. The Auditor's stake is **Slashed (-0.1 GEN)** and transferred to the Sponsor's pool as a penalty.
 
 ## 🏗️ Technical Architecture
 
 1. **Frontend:** Built with Next.js (React) and styled with raw CSS for a dark, glassmorphism "cyber-security" aesthetic. It's fully mobile-responsive and connects to the GenLayer Studionet via `genlayer-js` and `viem`.
-2. **Intelligent Smart Contract:** Written in Python using the `genlayer` SDK. It stores the registry of audits and uses `gl.eq_principle.prompt_non_comparative` to ask the GenVM nodes to collectively analyze the source code and return a JSON verdict (`SECURE` or `MALICIOUS`).
+2. **Intelligent Smart Contract:** Written in Python using the `genlayer` SDK. It maintains the registry of active Sponsor Pools and Audits, orchestrates the `get_webpage` fetching, and uses `gl.eq_principle.prompt_non_comparative` for decentralized AI consensus.
 
 ## 🔗 Live Contract
 
@@ -49,26 +51,3 @@ yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. You will need a Web3 Wallet (like MetaMask) connected to the GenLayer Studionet to interact with the platform.
-
-## 🧪 Testing the AI Consensus
-
-You can test the AI by pasting the following vulnerable Solidity code into the dashboard. Watch the GenVM catch the reentrancy attack and burn the stake!
-
-```solidity
-pragma solidity ^0.8.0;
-
-contract VulnerableBank {
-    mapping(address => uint256) public balances;
-
-    function withdraw() public {
-        uint256 bal = balances[msg.sender];
-        require(bal > 0, "Insufficient balance");
-        
-        // VULNERABILITY: External call happens before state update
-        (bool sent, ) = msg.sender.call{value: bal}("");
-        require(sent, "Failed to send Ether");
-
-        balances[msg.sender] = 0;
-    }
-}
-```
