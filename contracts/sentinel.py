@@ -75,13 +75,17 @@ class Sentinelpy(gl.Contract):
         target_url = project["target_url"]
         
         # 1. Fetch Source Code directly from URL to prevent user manipulation
+        def fetch_source() -> str:
+            response = gl.nondet.web.get(target_url)
+            return response.body.decode("utf-8")
+
         try:
-            source_code = gl.get_webpage(target_url)
+            source_code = gl.eq_principle.strict_eq(fetch_source)
             # Truncate to prevent huge context window crashes
             source_code = source_code[:4000] 
         except Exception as e:
             audit["status"] = "Error"
-            audit["analysis"] = f"Failed to fetch source code from {target_url}"
+            audit["analysis"] = f"Failed to fetch source code from {target_url}: {str(e)}"
             self.audits[audit_id] = json.dumps(audit)
             return str(e)
         
