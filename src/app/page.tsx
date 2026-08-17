@@ -39,7 +39,7 @@ export default function Home() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [writeClient, setWriteClient] = useState<any>(null);
 
-  const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0xB10AFC4E784D40b6C9A6B0883310aC8261391582";
+  const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x1FE7a31970fF8D24640b42FcDDDEA4d17a906b55";
 
   useEffect(() => {
     const rc = createClient({
