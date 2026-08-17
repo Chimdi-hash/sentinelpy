@@ -128,7 +128,8 @@ export default function Home() {
   useEffect(() => {
     if (readClient && contractAddress) {
       fetchData();
-      const interval = setInterval(() => fetchData(), 15000);
+      // Polling every 60 seconds instead of 15s to prevent GenLayer RPC rate limiting
+      const interval = setInterval(() => fetchData(), 60000);
       return () => clearInterval(interval);
     }
   }, [readClient, contractAddress, fetchData]);
