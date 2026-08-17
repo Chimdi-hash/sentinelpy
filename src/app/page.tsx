@@ -115,10 +115,15 @@ export default function Home() {
         }
       }
       setAudits(fetchedAudits.reverse());
+      
+      // Update balance automatically to reflect payouts
+      if (account) {
+        updateBalance(account);
+      }
     } catch (err) {
       console.error("Failed to fetch data", err);
     }
-  }, [readClient, contractAddress]);
+  }, [readClient, contractAddress, account]);
 
   useEffect(() => {
     if (readClient && contractAddress) {
