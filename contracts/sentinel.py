@@ -32,7 +32,7 @@ class Sentinelpy(gl.Contract):
         project_id = self.project_counter
         self.projects[project_id] = json.dumps({
             "target_url": target_url,
-            "sponsor": str(gl.message.sender_address).lower()
+            "sponsor": str(gl.message.sender_address)
         })
         # Store the deposited GEN directly into the project's pool
         self.project_balances[project_id] = u256(int(gl.message.value))
@@ -55,7 +55,7 @@ class Sentinelpy(gl.Contract):
             "status": "Pending",
             "payout_status": "Pending",
             "analysis": "",
-            "submitter": str(gl.message.sender_address).lower()
+            "submitter": str(gl.message.sender_address)
         })
         self.audit_counter += 1
         return audit_id
