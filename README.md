@@ -30,7 +30,7 @@ SentinelPy reimagines the traditional bug bounty model by replacing human judges
 ## 🔗 Live Contract
 
 The Intelligent Smart Contract is currently deployed on the **GenLayer Studionet**:
-`0x6669E1583F8331083B5ECB17b438FEaB6C683E9C`
+`0xA6a402Bc5a30Dfc5620a9f703f18a03f86F5C80a`
 
 ## 🛠️ Local Development
 
@@ -51,3 +51,21 @@ yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. You will need a Web3 Wallet (like MetaMask) connected to the GenLayer Studionet to interact with the platform.
+
+## 🧪 Testing the AI Consensus (Sponsor/Auditor Flow)
+
+To test the GenVM's ability to fetch, analyze, and adjudicate payouts, you can use the test smart contracts we have hosted in this repository.
+
+### Scenario 1: Vulnerable Contract (Bounty Paid)
+1. **Sponsor:** As a Project Owner, register a new project on the dashboard. Use the following Raw GitHub URL and deposit `5.0 GEN` into the bounty pool:
+   `https://raw.githubusercontent.com/Chimdi-hash/sentinelpy/main/public/examples/vulnerable_bank.sol`
+2. **Auditor:** Switch wallets (or act as the hacker). Find the project in the Active Bug Bounties list and click **Hunt Bugs (Stake 0.1)**. 
+3. **Execute:** Once the audit request is created, find it in the Pending Audits table and click **Audit ⯆**.
+4. **Result:** GenVM will fetch the code, detect the **Reentrancy** vulnerability, output the exact line snippet as evidence, return your 0.1 GEN stake, and pay you a 1.0 GEN Bounty from the Sponsor's pool!
+
+### Scenario 2: Secure Contract (Stake Slashed)
+1. **Sponsor:** Register a new project using the secure contract URL and deposit `5.0 GEN`:
+   `https://raw.githubusercontent.com/Chimdi-hash/sentinelpy/main/public/examples/secure_bank.sol`
+2. **Auditor:** Submit an audit request and stake `0.1 GEN`.
+3. **Execute:** Run the AI consensus. 
+4. **Result:** GenVM will fetch the code, verify the Checks-Effects-Interactions pattern is used correctly, and adjudicate the codebase as `SECURE`. As a penalty for a false alarm, the auditor's `0.1 GEN` stake is slashed and transferred to the Sponsor's pool!
