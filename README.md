@@ -30,7 +30,7 @@ SentinelPy reimagines the traditional bug bounty model by replacing human judges
 ## 🔗 Live Contract
 
 The Intelligent Smart Contract is currently deployed on the **GenLayer Studionet**:
-`0xA6a402Bc5a30Dfc5620a9f703f18a03f86F5C80a`
+`0xe40AceaD3d53be446E4b06f975a2E943FFBEB48e`
 
 ## 🛠️ Local Development
 
