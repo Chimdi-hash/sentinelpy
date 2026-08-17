@@ -186,3 +186,30 @@ Return a JSON response with EXACTLY these keys:
         project["pool_balance"] = str(self.project_balances.get(project_id, u256(0)))
         project["id"] = str(project_id)
         return json.dumps(project)
+
+    @gl.public.view
+    def get_all_projects(self) -> str:
+        all_projs = []
+        for i in range(int(self.project_counter)):
+            pid = u256(i)
+            if pid in self.projects:
+                project = json.loads(self.projects[pid])
+                project["pool_balance"] = str(self.project_balances.get(pid, u256(0)))
+                project["id"] = str(pid)
+                all_projs.append(project)
+        return json.dumps(all_projs)
+
+    @gl.public.view
+    def get_all_audits(self) -> str:
+        all_auds = []
+        for i in range(int(self.audit_counter)):
+            aid = u256(i)
+            if aid in self.audits:
+                audit = json.loads(self.audits[aid])
+                audit["id"] = str(aid)
+                project_id = u256(int(audit["project_id"]))
+                if project_id in self.projects:
+                    project = json.loads(self.projects[project_id])
+                    audit["target_url"] = project["target_url"]
+                all_auds.append(audit)
+        return json.dumps(all_auds)

@@ -67,54 +67,43 @@ export default function Home() {
     if (!readClient || !contractAddress) return;
     try {
       // Fetch Projects
-      const fetchedProjects = [];
-      let p = 0;
-      while (true) {
-        try {
-          const projStr = await readClient.readContract({
-             address: contractAddress,
-             functionName: 'get_project',
-             args: [p]
-          });
-          const proj = JSON.parse(projStr as string);
-          fetchedProjects.push({ 
-            id: p, 
-            targetUrl: proj.target_url || proj.targetUrl, 
-            sponsor: proj.sponsor,
-            poolBalance: (parseInt(proj.pool_balance || "0") / 1e18).toFixed(2)
-          });
-          p++;
-        } catch (e) {
-          break;
-        }
+      try {
+        const allProjsStr = await readClient.readContract({
+           address: contractAddress,
+           functionName: 'get_all_projects',
+           args: []
+        });
+        const allProjs = JSON.parse(allProjsStr as string);
+        const fetchedProjects = allProjs.map((proj: any) => ({
+          id: parseInt(proj.id), 
+          targetUrl: proj.target_url || proj.targetUrl, 
+          sponsor: proj.sponsor,
+          poolBalance: (parseInt(proj.pool_balance || "0") / 1e18).toFixed(2)
+        }));
+        setProjects(fetchedProjects.reverse());
+      } catch (e) {
+        console.error("Failed to fetch all projects", e);
       }
-      setProjects(fetchedProjects.reverse());
 
-      // Fetch Audits
-      const fetchedAudits = [];
-      let i = 0;
-      while (true) {
-        try {
-          const auditStr = await readClient.readContract({
-             address: contractAddress,
-             functionName: 'get_audit',
-             args: [i]
-          });
-          const audit = JSON.parse(auditStr as string);
-          fetchedAudits.push({ 
-            id: i, 
-            projectId: parseInt(audit.project_id || audit.projectId || "0"),
-            targetUrl: audit.target_url || audit.targetUrl, 
-            status: audit.status, 
-            payoutStatus: audit.payout_status || audit.payoutStatus || audit.payout_status, 
-            analysis: audit.analysis 
-          });
-          i++;
-        } catch (e) {
-          break;
-        }
+      try {
+        const allAudsStr = await readClient.readContract({
+           address: contractAddress,
+           functionName: 'get_all_audits',
+           args: []
+        });
+        const allAudits = JSON.parse(allAudsStr as string);
+        const fetchedAudits = allAudits.map((audit: any) => ({
+          id: parseInt(audit.id), 
+          projectId: parseInt(audit.project_id || audit.projectId || "0"),
+          targetUrl: audit.target_url || audit.targetUrl, 
+          status: audit.status, 
+          payoutStatus: audit.payout_status || audit.payoutStatus || audit.payout_status, 
+          analysis: audit.analysis 
+        }));
+        setAudits(fetchedAudits.reverse());
+      } catch (e) {
+        console.error("Failed to fetch all audits", e);
       }
-      setAudits(fetchedAudits.reverse());
       
       // Update balance automatically to reflect payouts
       if (account) {
