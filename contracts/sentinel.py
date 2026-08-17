@@ -161,9 +161,8 @@ Return a JSON response with EXACTLY these keys:
         else:
             # Code is SECURE. False alarm by auditor.
             audit["payout_status"] = "STAKE_SLASHED"
-            # Stake is transferred to the Sponsor's pool
-            current_pool = int(self.project_balances.get(project_id, u256(0)))
-            self.project_balances[project_id] = u256(current_pool + stake_wei)
+            # Explicitly burn the 0.1 GEN stake by sending it to the null address
+            _Recipient(Address("0x0000000000000000000000000000000000000000")).emit_transfer(value=u256(stake_wei), on='finalized')
         
         self.audits[audit_id] = json.dumps(audit)
         return json.dumps(result)
