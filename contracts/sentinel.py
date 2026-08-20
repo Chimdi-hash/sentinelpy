@@ -32,7 +32,8 @@ class Sentinelpy(gl.Contract):
         project_id = self.project_counter
         self.projects[project_id] = json.dumps({
             "target_url": target_url,
-            "sponsor": str(gl.message.sender_address)
+            "sponsor": str(gl.message.sender_address),
+            "status": "ACTIVE"
         })
         # Store the deposited GEN directly into the project's pool
         self.project_balances[project_id] = u256(int(gl.message.value))
@@ -48,6 +49,9 @@ class Sentinelpy(gl.Contract):
 
         if project_id not in self.projects:
             raise Exception("Project not found")
+        project = json.loads(self.projects[project_id])
+        if project.get("status") == "COMPROMISED":
+            raise Exception("Duplicate claim protection: Project is already proven vulnerable and settled.")
 
         audit_id = self.audit_counter
         self.audits[audit_id] = json.dumps({
@@ -109,7 +113,7 @@ Return a JSON response with EXACTLY these keys:
         response = gl.eq_principle.prompt_non_comparative(
             get_audit_context,
             task="Act as an expert blockchain security auditor. Evaluate the fetched source code.",
-            criteria="The result must be a valid JSON object containing exactly 'decision', 'vulnerability_type', 'evidence_line_snippet', and 'reasoning'."
+            criteria="Validators MUST verify that the extracted 'evidence_line_snippet' actually exists verbatim in the provided immutable source code artifact. Validators MUST verify the 'reasoning' logically proves a vulnerability. The 'decision' must be identically SECURE or MALICIOUS across validators. Reject if the snippet is fabricated or the logic is flawed."
         )
         
         # Parse JSON
@@ -148,12 +152,22 @@ Return a JSON response with EXACTLY these keys:
             bounty_wei = int(1.0 * 10**18)
             current_pool = int(self.project_balances.get(project_id, u256(0)))
             
+            # Mark project as compromised to prevent future audits
+            project["status"] = "COMPROMISED"
+            self.projects[project_id] = json.dumps(project)
+            
             if current_pool >= bounty_wei:
-                # Pool is solvent. Deduct bounty from pool.
-                self.project_balances[project_id] = u256(current_pool - bounty_wei)
+                # Pool is solvent.
                 # Payout Stake + Bounty to Auditor
                 _Recipient(submitter_addr).emit_transfer(value=u256(bounty_wei + stake_wei), on='finalized')
                 audit["payout_status"] = "BOUNTY_PAID"
+                
+                # Full escrow settlement: Refund remaining pool to sponsor
+                remaining_pool = current_pool - bounty_wei
+                if remaining_pool > 0:
+                    sponsor_addr = Address(project["sponsor"])
+                    _Recipient(sponsor_addr).emit_transfer(value=u256(remaining_pool), on='finalized')
+                self.project_balances[project_id] = u256(0)
             else:
                 # Pool depleted. Refund stake only.
                 audit["payout_status"] = "POOL_DEPLETED"
