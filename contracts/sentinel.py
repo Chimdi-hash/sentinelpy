@@ -1,6 +1,7 @@
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 import json
 import urllib.parse
+import hashlib
 from genlayer import *
 
 @gl.evm.contract_interface
@@ -20,8 +21,8 @@ class Sentinelpy(gl.Contract):
         self.project_counter = u256(0)
 
     @gl.public.write.payable
-    def register_project(self, target_url: str) -> u256:
-        """Sponsor registers a project and deposits a bounty pool."""
+    def register_project(self, target_url: str, content_hash: str) -> u256:
+        """Sponsor registers a project, deposits a bounty pool, and pins the content hash."""
         try:
             parsed = urllib.parse.urlparse(target_url)
             if parsed.scheme not in ['http', 'https']:
@@ -32,6 +33,7 @@ class Sentinelpy(gl.Contract):
         project_id = self.project_counter
         self.projects[project_id] = json.dumps({
             "target_url": target_url,
+            "content_hash": content_hash,
             "sponsor": str(gl.message.sender_address),
             "status": "ACTIVE"
         })
@@ -85,12 +87,20 @@ class Sentinelpy(gl.Contract):
 
         try:
             source_code = gl.eq_principle.strict_eq(fetch_source)
-            # Truncate to prevent huge context window crashes
-            source_code = source_code[:4000] 
+            # Verify the content hash matches the registered artifact
+            fetched_hash = hashlib.sha256(source_code.encode("utf-8")).hexdigest()
+            if fetched_hash != project.get("content_hash", ""):
+                raise Exception(f"Content hash mismatch! Expected {project.get('content_hash')} but got {fetched_hash}. The audited URL has changed.")
+            # Do NOT truncate source_code; full evaluation is required
         except Exception as e:
             audit["status"] = "Error"
-            audit["analysis"] = f"Failed to fetch source code from {target_url}: {str(e)}"
+            audit["analysis"] = f"Fetch/Hash error for {target_url}: {str(e)}"
             self.audits[audit_id] = json.dumps(audit)
+            
+            # Refund auditor's stake on error to prevent locked funds
+            submitter_addr = Address(audit["submitter"])
+            stake_wei = int(0.1 * 10**18)
+            _Recipient(submitter_addr).emit_transfer(value=u256(stake_wei), on='finalized')
             return str(e)
         
         # 2. Strong Consensus: Require substantive evidence
@@ -132,6 +142,11 @@ Return a JSON response with EXACTLY these keys:
             audit["status"] = "Error"
             audit["analysis"] = "Failed to parse AI consensus JSON"
             self.audits[audit_id] = json.dumps(audit)
+            
+            # Refund auditor's stake on error to prevent locked funds
+            submitter_addr = Address(audit["submitter"])
+            stake_wei = int(0.1 * 10**18)
+            _Recipient(submitter_addr).emit_transfer(value=u256(stake_wei), on='finalized')
             return str(e)
             
         audit["status"] = result.get("decision", "SECURE")
@@ -169,9 +184,11 @@ Return a JSON response with EXACTLY these keys:
                     _Recipient(sponsor_addr).emit_transfer(value=u256(remaining_pool), on='finalized')
                 self.project_balances[project_id] = u256(0)
             else:
-                # Pool depleted. Refund stake only.
-                audit["payout_status"] = "POOL_DEPLETED"
-                _Recipient(submitter_addr).emit_transfer(value=u256(stake_wei), on='finalized')
+                # Pool underfunded. Settle full remaining balance to auditor + refund stake.
+                audit["payout_status"] = "POOL_DEPLETED_PARTIAL_PAYOUT"
+                payout_amount = current_pool + stake_wei
+                _Recipient(submitter_addr).emit_transfer(value=u256(payout_amount), on='finalized')
+                self.project_balances[project_id] = u256(0)
         else:
             # Code is SECURE. False alarm by auditor.
             audit["payout_status"] = "STAKE_SLASHED"

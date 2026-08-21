@@ -164,10 +164,21 @@ export default function Home() {
     setIsRegistering(true);
     try {
       const fundWei = BigInt(parseFloat(fundAmount) * 1e18);
+      
+      // Fetch and hash content to bind to immutable artifact
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch source code from URL");
+      const source = await response.text();
+      const encoder = new TextEncoder();
+      const data = encoder.encode(source);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const contentHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
       await writeClient.writeContract({
         address: contractAddress,
         functionName: 'register_project',
-        args: [url],
+        args: [url, contentHash],
         value: fundWei,
       });
       setUrl('');
