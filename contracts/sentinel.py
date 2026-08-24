@@ -61,10 +61,37 @@ class Sentinelpy(gl.Contract):
             "status": "Pending",
             "payout_status": "Pending",
             "analysis": "",
-            "submitter": str(gl.message.sender_address)
+            "submitter": str(gl.message.sender_address),
+            "stake": str(gl.message.value)
         })
         self.audit_counter += 1
         return audit_id
+
+    @gl.public.write
+    def close_project(self, project_id: u256) -> str:
+        """Sponsor withdraws funds and closes the project (unused-pool case)."""
+        if project_id not in self.projects:
+            raise Exception("Project not found")
+            
+        project = json.loads(self.projects[project_id])
+        if str(gl.message.sender_address) != project["sponsor"]:
+            raise Exception("Only the sponsor can close the project")
+            
+        if project.get("status") in ["CLOSED", "COMPROMISED"]:
+            raise Exception("Project is already closed or compromised")
+            
+        current_pool = int(self.project_balances.get(project_id, u256(0)))
+        
+        # Mark as closed
+        project["status"] = "CLOSED"
+        self.projects[project_id] = json.dumps(project)
+        self.project_balances[project_id] = u256(0)
+        
+        # Refund unused pool
+        if current_pool > 0:
+            _Recipient(Address(project["sponsor"])).emit_transfer(value=u256(current_pool), on='finalized')
+            
+        return "Project closed and funds withdrawn"
 
     @gl.public.write
     def execute_audit(self, audit_id: u256) -> str:
@@ -138,18 +165,32 @@ Return a JSON response with EXACTLY these keys:
         
         try:
             result = json.loads(clean_response)
+            
+            # 1. Strict schema validation
+            expected_keys = {"decision", "vulnerability_type", "evidence_line_snippet", "reasoning"}
+            if not expected_keys.issubset(result.keys()):
+                raise Exception(f"Missing expected keys in AI response. Expected: {expected_keys}")
+            if result["decision"] not in ["SECURE", "MALICIOUS"]:
+                raise Exception(f"Invalid decision: {result['decision']}")
+            
+            # 2. Verify cited evidence before settlement
+            if result["decision"] == "MALICIOUS":
+                snippet = result.get("evidence_line_snippet", "")
+                if snippet != "None" and snippet not in source_code:
+                    raise Exception("Fabricated evidence: The cited line snippet was not found in the source code.")
+
         except Exception as e:
             audit["status"] = "Error"
-            audit["analysis"] = "Failed to parse AI consensus JSON"
+            audit["analysis"] = f"AI Error/Invalid Schema/Fabrication: {str(e)}"
             self.audits[audit_id] = json.dumps(audit)
             
-            # Refund auditor's stake on error to prevent locked funds
+            # Refund auditor's full stake on error to prevent locked funds
             submitter_addr = Address(audit["submitter"])
-            stake_wei = int(0.1 * 10**18)
+            stake_wei = int(audit.get("stake", int(0.1 * 10**18)))
             _Recipient(submitter_addr).emit_transfer(value=u256(stake_wei), on='finalized')
             return str(e)
             
-        audit["status"] = result.get("decision", "SECURE")
+        audit["status"] = result["decision"]
         
         # Format the analysis to display the substantive evidence nicely
         formatted_analysis = (
@@ -161,7 +202,7 @@ Return a JSON response with EXACTLY these keys:
         
         # 3. Solvent Payout Logic
         submitter_addr = Address(audit["submitter"])
-        stake_wei = int(0.1 * 10**18)
+        stake_wei = int(audit.get("stake", int(0.1 * 10**18)))
         
         if audit["status"] == "MALICIOUS":
             bounty_wei = int(1.0 * 10**18)
