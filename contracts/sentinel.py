@@ -126,7 +126,7 @@ class Sentinelpy(gl.Contract):
             
             # Refund auditor's stake on error to prevent locked funds
             submitter_addr = Address(audit["submitter"])
-            stake_wei = int(0.1 * 10**18)
+            stake_wei = int(audit.get("stake", int(0.1 * 10**18)))
             _Recipient(submitter_addr).emit_transfer(value=u256(stake_wei), on='finalized')
             return str(e)
         
@@ -168,15 +168,17 @@ Return a JSON response with EXACTLY these keys:
             
             # 1. Strict schema validation
             expected_keys = {"decision", "vulnerability_type", "evidence_line_snippet", "reasoning"}
-            if not expected_keys.issubset(result.keys()):
-                raise Exception(f"Missing expected keys in AI response. Expected: {expected_keys}")
+            if set(result.keys()) != expected_keys:
+                raise Exception(f"Exact schema mismatch in AI response. Expected exactly: {expected_keys}")
             if result["decision"] not in ["SECURE", "MALICIOUS"]:
                 raise Exception(f"Invalid decision: {result['decision']}")
             
             # 2. Verify cited evidence before settlement
             if result["decision"] == "MALICIOUS":
                 snippet = result.get("evidence_line_snippet", "")
-                if snippet != "None" and snippet not in source_code:
+                if snippet == "None" or not snippet.strip():
+                    raise Exception("MALICIOUS result must provide a valid evidence_line_snippet.")
+                if snippet not in source_code:
                     raise Exception("Fabricated evidence: The cited line snippet was not found in the source code.")
 
         except Exception as e:
