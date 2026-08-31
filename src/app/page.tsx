@@ -137,7 +137,7 @@ export default function Home() {
         const wc = createClient({
           chain: studionet,
           account: address,
-          transport: custom(provider),
+          provider: provider,
         });
         setWriteClient(wc);
       } catch (err) {

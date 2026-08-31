@@ -169,5 +169,26 @@ class TestContractPaths(unittest.TestCase):
         self.assertEqual(TestContractPaths.transfers[0][1], stake_wei)
         self.assertEqual(self.contract.project_balances[self.proj_id], int(5.0 * 10**18))
 
+    def test_close_project_pending_audits_blocked(self):
+        mock_gl.message.sender_address = "auditor_addr"
+        mock_gl.message.value = int(0.1 * 10**18)
+        self.contract.submit_audit(self.proj_id)
+        mock_gl.message.sender_address = "sponsor_addr"
+        with self.assertRaisesRegex(Exception, "Cannot close project while audits are pending"):
+            self.contract.close_project(self.proj_id)
+
+    def test_audit_execution_closed_project_blocked(self):
+        mock_gl.message.sender_address = "sponsor_addr"
+        self.contract.close_project(self.proj_id)
+        mock_gl.message.sender_address = "auditor_addr"
+        mock_gl.message.value = int(0.1 * 10**18)
+        audit_id = self.contract.audit_counter
+        self.contract.audits[audit_id] = json.dumps({'project_id': str(self.proj_id), 'status': 'Pending', 'payout_status': 'Pending', 'analysis': '', 'submitter': 'auditor_addr', 'stake': str(int(0.1 * 10**18))})
+        self.contract.audit_counter += 1
+        self.contract.execute_audit(audit_id)
+        self.assertEqual(len(TestContractPaths.transfers), 2)
+        self.assertEqual(TestContractPaths.transfers[1][0], "auditor_addr")
+        self.assertEqual(TestContractPaths.transfers[1][1], int(0.1 * 10**18))
+
 if __name__ == '__main__':
     unittest.main()

@@ -35,7 +35,8 @@ class Sentinelpy(gl.Contract):
             "target_url": target_url,
             "content_hash": content_hash,
             "sponsor": str(gl.message.sender_address),
-            "status": "ACTIVE"
+            "status": "ACTIVE",
+            "pending_audits": 0
         })
         # Store the deposited GEN directly into the project's pool
         self.project_balances[project_id] = u256(int(gl.message.value))
@@ -52,8 +53,11 @@ class Sentinelpy(gl.Contract):
         if project_id not in self.projects:
             raise Exception("Project not found")
         project = json.loads(self.projects[project_id])
-        if project.get("status") == "COMPROMISED":
-            raise Exception("Duplicate claim protection: Project is already proven vulnerable and settled.")
+        if project.get("status") in ["COMPROMISED", "CLOSED"]:
+            raise Exception(f"Project cannot be audited. Status: {project.get('status')}")
+
+        project["pending_audits"] = project.get("pending_audits", 0) + 1
+        self.projects[project_id] = json.dumps(project)
 
         audit_id = self.audit_counter
         self.audits[audit_id] = json.dumps({
@@ -80,6 +84,9 @@ class Sentinelpy(gl.Contract):
         if project.get("status") in ["CLOSED", "COMPROMISED"]:
             raise Exception("Project is already closed or compromised")
             
+        if project.get("pending_audits", 0) > 0:
+            raise Exception("Cannot close project while audits are pending")
+            
         current_pool = int(self.project_balances.get(project_id, u256(0)))
         
         # Mark as closed
@@ -105,6 +112,21 @@ class Sentinelpy(gl.Contract):
             
         project_id = u256(int(audit["project_id"]))
         project = json.loads(self.projects[project_id])
+        
+        # Always decrement pending audits when execution starts
+        project["pending_audits"] = max(0, project.get("pending_audits", 0) - 1)
+        self.projects[project_id] = json.dumps(project)
+        
+        if project.get("status") in ["CLOSED", "COMPROMISED"]:
+            audit["status"] = "Error"
+            audit["analysis"] = f"Audit aborted: Project is {project.get('status')}"
+            self.audits[audit_id] = json.dumps(audit)
+            
+            submitter_addr = Address(audit["submitter"])
+            stake_wei = int(audit.get("stake", int(0.1 * 10**18)))
+            _Recipient(submitter_addr).emit_transfer(value=u256(stake_wei), on='finalized')
+            return f"Project is {project.get('status')}"
+            
         target_url = project["target_url"]
         
         # 1. Fetch Source Code directly from URL to prevent user manipulation
