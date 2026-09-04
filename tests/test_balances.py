@@ -190,5 +190,19 @@ class TestContractPaths(unittest.TestCase):
         self.assertEqual(TestContractPaths.transfers[1][0], "auditor_addr")
         self.assertEqual(TestContractPaths.transfers[1][1], int(0.1 * 10**18))
 
+    def test_audit_execution_compromised_project_blocked(self):
+        proj = json.loads(self.contract.projects[self.proj_id])
+        proj['status'] = 'COMPROMISED'
+        self.contract.projects[self.proj_id] = json.dumps(proj)
+        mock_gl.message.sender_address = "auditor_addr"
+        mock_gl.message.value = int(0.1 * 10**18)
+        audit_id = self.contract.audit_counter
+        self.contract.audits[audit_id] = json.dumps({'project_id': str(self.proj_id), 'status': 'Pending', 'payout_status': 'Pending', 'analysis': '', 'submitter': 'auditor_addr', 'stake': str(int(0.1 * 10**18))})
+        self.contract.audit_counter += 1
+        self.contract.execute_audit(audit_id)
+        self.assertEqual(len(TestContractPaths.transfers), 1)
+        self.assertEqual(TestContractPaths.transfers[0][0], "auditor_addr")
+        self.assertEqual(TestContractPaths.transfers[0][1], int(0.1 * 10**18))
+
 if __name__ == '__main__':
     unittest.main()
