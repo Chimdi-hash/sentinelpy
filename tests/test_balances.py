@@ -82,7 +82,7 @@ class TestContractPaths(unittest.TestCase):
         mock_gl.message.sender_address = "auditor_addr"
         overpayment_wei = int(0.5 * 10**18)
         mock_gl.message.value = overpayment_wei
-        audit_id = self.contract.submit_audit(self.proj_id)
+        audit_id = self.contract.submit_audit(self.proj_id, 'fake report')
         
         # Cause a fetch error by changing hash
         self.mock_sha256.return_value.hexdigest.return_value = "badhash"
@@ -97,7 +97,7 @@ class TestContractPaths(unittest.TestCase):
         mock_gl.message.sender_address = "auditor_addr"
         stake_wei = int(0.1 * 10**18)
         mock_gl.message.value = stake_wei
-        audit_id = self.contract.submit_audit(self.proj_id)
+        audit_id = self.contract.submit_audit(self.proj_id, 'fake report')
         
         # Mock AI response
         ai_resp = json.dumps({
@@ -131,7 +131,7 @@ class TestContractPaths(unittest.TestCase):
         mock_gl.message.sender_address = "auditor_addr"
         stake_wei = int(0.1 * 10**18)
         mock_gl.message.value = stake_wei
-        audit_id = self.contract.submit_audit(uf_proj_id)
+        audit_id = self.contract.submit_audit(uf_proj_id, 'fake report')
         
         ai_resp = json.dumps({
             "decision": "MALICIOUS",
@@ -152,7 +152,7 @@ class TestContractPaths(unittest.TestCase):
         mock_gl.message.sender_address = "auditor_addr"
         stake_wei = int(0.1 * 10**18)
         mock_gl.message.value = stake_wei
-        audit_id = self.contract.submit_audit(self.proj_id)
+        audit_id = self.contract.submit_audit(self.proj_id, 'fake report')
         
         ai_resp = json.dumps({
             "decision": "SECURE",
@@ -172,7 +172,7 @@ class TestContractPaths(unittest.TestCase):
     def test_close_project_pending_audits_blocked(self):
         mock_gl.message.sender_address = "auditor_addr"
         mock_gl.message.value = int(0.1 * 10**18)
-        self.contract.submit_audit(self.proj_id)
+        self.contract.submit_audit(self.proj_id, 'fake report')
         mock_gl.message.sender_address = "sponsor_addr"
         with self.assertRaisesRegex(Exception, "Cannot close project while audits are pending"):
             self.contract.close_project(self.proj_id)

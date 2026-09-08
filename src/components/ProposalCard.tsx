@@ -6,6 +6,7 @@ export interface Audit {
   status: string;
   payoutStatus: string;
   analysis: string;
+  report?: string;
 }
 
 export default function ProposalCard({ audit, index, onExecute, account }: { audit: Audit, index: number, onExecute?: () => void, account?: string | null }) {
@@ -82,6 +83,12 @@ export default function ProposalCard({ audit, index, onExecute, account }: { aud
             fontSize: '0.75rem',
             color: 'var(--text-muted)'
           }}>
+            {audit.report && (
+              <>
+                <div style={{ color: 'var(--warning)', marginBottom: '0.4rem', marginTop: '0.4rem' }}>&gt; Auditor Report:</div>
+                <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.4', marginBottom: '1rem', color: 'var(--text-main)' }}>{audit.report}</div>
+              </>
+            )}
             <div style={{ color: 'var(--primary-cyan)', marginBottom: '0.4rem' }}>&gt; GenVM Analysis Trace:</div>
             <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{audit.analysis}</div>
           </div>

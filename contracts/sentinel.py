@@ -44,11 +44,17 @@ class Sentinelpy(gl.Contract):
         return project_id
 
     @gl.public.write.payable
-    def submit_audit(self, project_id: u256) -> u256:
-        """Auditor submits an audit request against a project, staking 0.1 GEN."""
+    def submit_audit(self, project_id: u256, report: str) -> u256:
+        """Auditor submits a specific vulnerability report against a project, staking 0.1 GEN."""
         required_wei = int(0.1 * 10**18)
         if gl.message.value < required_wei:
             raise Exception("Insufficient GEN attached to submit an audit (0.1 GEN required stake)")
+            
+        if not report or not report.strip():
+            raise Exception("A concrete vulnerability report must be provided.")
+
+        if len(report) > 2000:
+            raise Exception("Report is too long (max 2000 characters).")
 
         if project_id not in self.projects:
             raise Exception("Project not found")
@@ -65,6 +71,7 @@ class Sentinelpy(gl.Contract):
             "status": "Pending",
             "payout_status": "Pending",
             "analysis": "",
+            "report": report.strip(),
             "submitter": str(gl.message.sender_address),
             "stake": str(gl.message.value)
         })
@@ -157,22 +164,29 @@ class Sentinelpy(gl.Contract):
             return f"""
 EVALUATION TARGET:
 Target URL: {target_url}
-Source Code (Fetched Directly by Contract):
+
+AUDITOR'S SPECIFIC VULNERABILITY REPORT:
+{audit.get('report', 'No report provided.')}
+
+SOURCE CODE (Fetched Directly by Contract):
 {source_code}
 
 CRITICAL SECURITY DIRECTIVE:
-Identify any critical vulnerabilities (like Reentrancy, Logic Flaws, Prompt Injection) in this source code. 
+You are an expert blockchain security auditor. The auditor has submitted a specific vulnerability report for this source code.
+Your task is to adjudicate THIS SPECIFIC reported vulnerability. Do not perform a broad whole-source scan for other issues.
+Analyze the source code to determine if the SPECIFIC vulnerability described in the report is valid, reachable, and has a real security impact.
+
 Return a JSON response with EXACTLY these keys:
-- 'decision': 'SECURE' or 'MALICIOUS'
+- 'decision': 'MALICIOUS' (if the reported bug is valid and impactful) or 'SECURE' (if the reported bug is invalid, unreachable, or harmless).
 - 'vulnerability_type': Short name of the vulnerability (e.g. 'Reentrancy', 'None')
 - 'evidence_line_snippet': The exact line of code that causes the issue (or 'None')
-- 'reasoning': Explanation.
+- 'reasoning': Explanation of why the reported bug is valid or invalid.
 """
             
         response = gl.eq_principle.prompt_non_comparative(
             get_audit_context,
-            task="Act as an expert blockchain security auditor. Evaluate the fetched source code.",
-            criteria="Validators MUST verify that the extracted 'evidence_line_snippet' actually exists verbatim in the provided immutable source code artifact. Validators MUST verify the 'reasoning' logically proves a vulnerability. The 'decision' must be identically SECURE or MALICIOUS across validators. Reject if the snippet is fabricated or the logic is flawed."
+            task="Adjudicate the specific vulnerability report against the provided source code.",
+            criteria="Validators MUST verify that the reported vulnerability is actually reachable and impactful in the provided bounded source code. Validators MUST verify that the extracted 'evidence_line_snippet' actually exists verbatim in the source. Reject if the snippet is fabricated, or if the reported bug is not genuinely exploitable."
         )
         
         # Parse JSON

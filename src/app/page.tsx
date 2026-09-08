@@ -200,12 +200,18 @@ export default function Home() {
       return;
     }
     
+    const report = window.prompt("Please enter a specific vulnerability report (what is the bug, how does it work, where is it located?):");
+    if (!report || report.trim() === "") {
+        alert("A vulnerability report is required to hunt bugs.");
+        return;
+    }
+
     setIsAuditingId(projectId);
     try {
       await writeClient.writeContract({
         address: contractAddress,
         functionName: 'submit_audit',
-        args: [projectId],
+        args: [projectId, report.trim()],
         value: BigInt("100000000000000000"), // 0.1 GEN stake
       });
       alert("Audit request submitted successfully! Find it in the active audits list to execute.");
