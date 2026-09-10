@@ -206,12 +206,22 @@ export default function Home() {
         return;
     }
 
+    const startLineRaw = window.prompt("Enter the STARTING line number of the vulnerable code snippet:");
+    const endLineRaw = window.prompt("Enter the ENDING line number of the vulnerable code snippet:");
+    const startLine = parseInt(startLineRaw || "0");
+    const endLine = parseInt(endLineRaw || "0");
+
+    if (isNaN(startLine) || isNaN(endLine) || startLine < 1 || endLine < startLine) {
+        alert("Invalid line numbers. Start line must be >= 1 and End line must be >= Start line.");
+        return;
+    }
+
     setIsAuditingId(projectId);
     try {
       await writeClient.writeContract({
         address: contractAddress,
         functionName: 'submit_audit',
-        args: [projectId, report.trim()],
+        args: [projectId, report.trim(), startLine, endLine],
         value: BigInt("100000000000000000"), // 0.1 GEN stake
       });
       alert("Audit request submitted successfully! Find it in the active audits list to execute.");

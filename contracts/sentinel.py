@@ -23,12 +23,10 @@ class Sentinelpy(gl.Contract):
     @gl.public.write.payable
     def register_project(self, target_url: str, content_hash: str) -> u256:
         """Sponsor registers a project, deposits a bounty pool, and pins the content hash."""
-        try:
-            parsed = urllib.parse.urlparse(target_url)
-            if parsed.scheme not in ['http', 'https']:
-                raise Exception("Invalid URL scheme. Must be http or https.")
-        except Exception as e:
-            raise Exception(f"Invalid Target URL format: {str(e)}")
+        import re
+        # Enforce provenance-checked URL: raw.githubusercontent.com with a 40-character commit hash
+        if not re.match(r"^https://raw\.githubusercontent\.com/[^/]+/[^/]+/[0-9a-f]{40}/.+", target_url):
+            raise Exception("Target URL must be a raw.githubusercontent.com URL containing a full 40-character commit hash for provenance.")
 
         project_id = self.project_counter
         self.projects[project_id] = json.dumps({
@@ -44,8 +42,8 @@ class Sentinelpy(gl.Contract):
         return project_id
 
     @gl.public.write.payable
-    def submit_audit(self, project_id: u256, report: str) -> u256:
-        """Auditor submits a specific vulnerability report against a project, staking 0.1 GEN."""
+    def submit_audit(self, project_id: u256, report: str, start_line: int, end_line: int) -> u256:
+        """Auditor submits a specific vulnerability report against a project, bounding the source to specific lines, staking 0.1 GEN."""
         required_wei = int(0.1 * 10**18)
         if gl.message.value < required_wei:
             raise Exception("Insufficient GEN attached to submit an audit (0.1 GEN required stake)")
@@ -55,6 +53,9 @@ class Sentinelpy(gl.Contract):
 
         if len(report) > 2000:
             raise Exception("Report is too long (max 2000 characters).")
+            
+        if start_line < 1 or end_line < start_line:
+            raise Exception("Invalid bounding lines specified.")
 
         if project_id not in self.projects:
             raise Exception("Project not found")
@@ -72,6 +73,8 @@ class Sentinelpy(gl.Contract):
             "payout_status": "Pending",
             "analysis": "",
             "report": report.strip(),
+            "start_line": int(start_line),
+            "end_line": int(end_line),
             "submitter": str(gl.message.sender_address),
             "stake": str(gl.message.value)
         })
@@ -147,7 +150,14 @@ class Sentinelpy(gl.Contract):
             fetched_hash = hashlib.sha256(source_code.encode("utf-8")).hexdigest()
             if fetched_hash != project.get("content_hash", ""):
                 raise Exception(f"Content hash mismatch! Expected {project.get('content_hash')} but got {fetched_hash}. The audited URL has changed.")
-            # Do NOT truncate source_code; full evaluation is required
+            
+            # Slice source code to bounded subset based on auditor's start/end lines
+            # Add small padding of 5 lines for context
+            lines = source_code.split("\n")
+            start_idx = max(0, audit.get("start_line", 1) - 6)
+            end_idx = min(len(lines), audit.get("end_line", len(lines)) + 5)
+            bounded_source = "\n".join(lines[start_idx:end_idx])
+
         except Exception as e:
             audit["status"] = "Error"
             audit["analysis"] = f"Fetch/Hash error for {target_url}: {str(e)}"
@@ -168,8 +178,8 @@ Target URL: {target_url}
 AUDITOR'S SPECIFIC VULNERABILITY REPORT:
 {audit.get('report', 'No report provided.')}
 
-SOURCE CODE (Fetched Directly by Contract):
-{source_code}
+BOUNDED SOURCE CODE (Lines {start_idx+1} to {end_idx}):
+{bounded_source}
 
 CRITICAL SECURITY DIRECTIVE:
 You are an expert blockchain security auditor. The auditor has submitted a specific vulnerability report for this source code.
