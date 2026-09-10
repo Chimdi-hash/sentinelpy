@@ -34,6 +34,13 @@ export default function Home() {
   const [audits, setAudits] = useState<Audit[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   
+  // Audit Submission Modal State
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [selectedAuditProjectId, setSelectedAuditProjectId] = useState<number | null>(null);
+  const [auditReport, setAuditReport] = useState("");
+  const [auditStartLine, setAuditStartLine] = useState("");
+  const [auditEndLine, setAuditEndLine] = useState("");
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [readClient, setReadClient] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,7 +105,10 @@ export default function Home() {
           targetUrl: audit.target_url || audit.targetUrl, 
           status: audit.status, 
           payoutStatus: audit.payout_status || audit.payoutStatus || audit.payout_status, 
-          analysis: audit.analysis 
+          analysis: audit.analysis,
+          report: audit.report,
+          startLine: audit.start_line,
+          endLine: audit.end_line
         }));
         setAudits(fetchedAudits.reverse());
       } catch (e) {
@@ -194,46 +204,60 @@ export default function Home() {
     }
   };
 
-  const handleSubmitAudit = async (projectId: number) => {
+  const openAuditModal = (projectId: number) => {
     if (!account || !writeClient) {
       alert("Please connect your wallet first.");
       return;
     }
-    
-    const report = window.prompt("Please enter a specific vulnerability report (what is the bug, how does it work, where is it located?):");
-    if (!report || report.trim() === "") {
-        alert("A vulnerability report is required to hunt bugs.");
+    setSelectedAuditProjectId(projectId);
+    setAuditReport("");
+    setAuditStartLine("");
+    setAuditEndLine("");
+    setShowAuditModal(true);
+  };
+
+  const submitAuditModal = async () => {
+    if (selectedAuditProjectId === null || !writeClient) return;
+
+    if (!auditReport || auditReport.trim() === "") {
+        alert("A vulnerability report is required.");
         return;
     }
 
-    const startLineRaw = window.prompt("Enter the STARTING line number of the vulnerable code snippet:");
-    const endLineRaw = window.prompt("Enter the ENDING line number of the vulnerable code snippet:");
-    const startLine = parseInt(startLineRaw || "0");
-    const endLine = parseInt(endLineRaw || "0");
+    const startLine = parseInt(auditStartLine);
+    const endLine = parseInt(auditEndLine);
 
     if (isNaN(startLine) || isNaN(endLine) || startLine < 1 || endLine < startLine) {
         alert("Invalid line numbers. Start line must be >= 1 and End line must be >= Start line.");
         return;
     }
 
-    setIsAuditingId(projectId);
+    if (endLine - startLine > 100) {
+        alert("Maximum bounded slice is 100 lines. Please narrow your report window.");
+        return;
+    }
+
+    setIsAuditingId(selectedAuditProjectId);
+    setShowAuditModal(false);
+    
     try {
       await writeClient.writeContract({
         address: contractAddress,
         functionName: 'submit_audit',
-        args: [projectId, report.trim(), startLine, endLine],
+        args: [selectedAuditProjectId, auditReport.trim(), startLine, endLine],
         value: BigInt("100000000000000000"), // 0.1 GEN stake
       });
       alert("Audit request submitted successfully! Find it in the active audits list to execute.");
       setTimeout(() => {
         fetchData();
-        updateBalance(account);
+        if (account) updateBalance(account);
       }, 2000);
     } catch (error: any) {
       console.error(error);
       alert(`Error submitting audit:\n\n${error?.message || JSON.stringify(error) || String(error)}`);
     } finally {
       setIsAuditingId(null);
+      setSelectedAuditProjectId(null);
     }
   };
 
@@ -422,7 +446,7 @@ export default function Home() {
                                   <button 
                                     className="cyber-button" 
                                     style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', width: 'auto' }}
-                                    onClick={() => handleSubmitAudit(proj.id)}
+                                    onClick={() => openAuditModal(proj.id)}
                                     disabled={isAuditingId === proj.id || !account}
                                   >
                                     {isAuditingId === proj.id ? '...' : 'Hunt Bugs (Stake 0.1)'}
@@ -562,6 +586,56 @@ export default function Home() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+      
+        {/* Audit Submission Modal */}
+        {showAuditModal && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div className="cyber-panel" style={{ width: '100%', maxWidth: '500px', padding: '1.5rem', background: '#0a0a0a', border: '1px solid var(--primary-cyan)', borderRadius: '8px' }}>
+              <div className="panel-title text-cyan" style={{ marginBottom: '1rem' }}>SUBMIT VULNERABILITY REPORT</div>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="text-muted" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Specific Vulnerability Report (What is the bug, how does it work, where is it?)</label>
+                <textarea 
+                  className="cyber-input"
+                  style={{ width: '100%', minHeight: '100px', resize: 'vertical' }}
+                  value={auditReport}
+                  onChange={(e) => setAuditReport(e.target.value)}
+                  placeholder="Describe the vulnerability..."
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label className="text-muted" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Start Line</label>
+                  <input 
+                    type="number" 
+                    className="cyber-input" 
+                    style={{ width: '100%' }}
+                    value={auditStartLine}
+                    onChange={(e) => setAuditStartLine(e.target.value)}
+                    placeholder="e.g. 42"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="text-muted" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.5rem' }}>End Line (Max 100 span)</label>
+                  <input 
+                    type="number" 
+                    className="cyber-input" 
+                    style={{ width: '100%' }}
+                    value={auditEndLine}
+                    onChange={(e) => setAuditEndLine(e.target.value)}
+                    placeholder="e.g. 60"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button className="cyber-button" style={{ background: 'transparent', borderColor: 'var(--text-muted)', color: 'var(--text-muted)' }} onClick={() => setShowAuditModal(false)}>Cancel</button>
+                <button className="cyber-button" onClick={submitAuditModal}>Submit & Stake 0.1 GEN</button>
               </div>
             </div>
           </div>

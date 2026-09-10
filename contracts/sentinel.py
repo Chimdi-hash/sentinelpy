@@ -56,6 +56,9 @@ class Sentinelpy(gl.Contract):
             
         if start_line < 1 or end_line < start_line:
             raise Exception("Invalid bounding lines specified.")
+            
+        if end_line - start_line > 100:
+            raise Exception("Maximum bounded slice is 100 lines. Please narrow your report window.")
 
         if project_id not in self.projects:
             raise Exception("Project not found")
@@ -196,7 +199,7 @@ Return a JSON response with EXACTLY these keys:
         response = gl.eq_principle.prompt_non_comparative(
             get_audit_context,
             task="Adjudicate the specific vulnerability report against the provided source code.",
-            criteria="Validators MUST verify that the reported vulnerability is actually reachable and impactful in the provided bounded source code. Validators MUST verify that the extracted 'evidence_line_snippet' actually exists verbatim in the source. Reject if the snippet is fabricated, or if the reported bug is not genuinely exploitable."
+            criteria="Validators MUST verify that the reported vulnerability is actually reachable and impactful in the provided bounded source code slice. Validators MUST verify that the extracted 'evidence_line_snippet' actually exists verbatim in the bounded source code slice. Reject if the snippet is fabricated, or if the reported bug is not genuinely exploitable."
         )
         
         # Parse JSON
@@ -224,8 +227,8 @@ Return a JSON response with EXACTLY these keys:
                 snippet = result.get("evidence_line_snippet", "")
                 if snippet == "None" or not snippet.strip():
                     raise Exception("MALICIOUS result must provide a valid evidence_line_snippet.")
-                if snippet not in source_code:
-                    raise Exception("Fabricated evidence: The cited line snippet was not found in the source code.")
+                if snippet not in bounded_source:
+                    raise Exception("Fabricated evidence: The cited line snippet was not found in the bounded source slice.")
 
         except Exception as e:
             audit["status"] = "Error"
