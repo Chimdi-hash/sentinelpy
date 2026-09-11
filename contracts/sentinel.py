@@ -145,6 +145,9 @@ class Sentinelpy(gl.Contract):
         # 1. Fetch Source Code directly from URL to prevent user manipulation
         def fetch_source() -> str:
             response = gl.nondet.web.get(target_url)
+            MAX_BYTES = 500 * 1024  # 500 KB maximum response size
+            if len(response.body) > MAX_BYTES:
+                raise Exception(f"Remote file exceeds maximum allowed size of {MAX_BYTES} bytes.")
             return response.body.decode("utf-8")
 
         try:

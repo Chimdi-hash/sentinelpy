@@ -204,5 +204,31 @@ class TestContractPaths(unittest.TestCase):
         self.assertEqual(TestContractPaths.transfers[0][0], "auditor_addr")
         self.assertEqual(TestContractPaths.transfers[0][1], int(0.1 * 10**18))
 
+    def test_audit_execution_oversized_response(self):
+        mock_gl.message.sender_address = "auditor_addr"
+        mock_gl.message.value = int(0.1 * 10**18)
+        audit_id = self.contract.submit_audit(self.proj_id, "fake report", 1, 1)
+
+        # Force strict_eq to actually call the inner function to test the byte cap
+        original_strict_eq = mock_gl.eq_principle.strict_eq.return_value
+        mock_gl.eq_principle.strict_eq.return_value = None
+        mock_gl.eq_principle.strict_eq.side_effect = lambda f: f()
+        
+        class OversizedResponse:
+            body = b"A" * (500 * 1024 + 1)
+        mock_gl.nondet.web.get.return_value = OversizedResponse()
+
+        res = self.contract.execute_audit(audit_id)
+        self.assertTrue("Remote file exceeds maximum allowed size" in res)
+        
+        # Auditor stake must be refunded on error
+        self.assertEqual(len(TestContractPaths.transfers), 1)
+        self.assertEqual(TestContractPaths.transfers[0][0], "auditor_addr")
+        self.assertEqual(TestContractPaths.transfers[0][1], int(0.1 * 10**18))
+        
+        # Restore mock state
+        mock_gl.eq_principle.strict_eq.side_effect = None
+        mock_gl.eq_principle.strict_eq.return_value = original_strict_eq
+
 if __name__ == '__main__':
     unittest.main()
