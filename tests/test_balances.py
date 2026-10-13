@@ -48,6 +48,8 @@ class TestContractPaths(unittest.TestCase):
         self.contract.projects = FakeTreeMap()
         self.contract.project_balances = FakeTreeMap()
         self.contract.audits = FakeTreeMap()
+        self.contract.researchers = FakeTreeMap()
+        self.contract.researcher_indices = FakeTreeMap()
         
         # Setup mock sender
         mock_gl.message.sender_address = "sponsor_addr"
@@ -93,15 +95,16 @@ class TestContractPaths(unittest.TestCase):
         self.assertEqual(TestContractPaths.transfers[0][0], "auditor_addr")
         self.assertEqual(TestContractPaths.transfers[0][1], overpayment_wei)
 
-    def test_malicious_solvent_pool(self):
+    def test_malicious_critical_solvent_pool(self):
         mock_gl.message.sender_address = "auditor_addr"
         stake_wei = int(0.1 * 10**18)
         mock_gl.message.value = stake_wei
         audit_id = self.contract.submit_audit(self.proj_id, 'fake report', 1, 1)
         
-        # Mock AI response
+        # Mock AI response with CRITICAL severity (2.0 GEN bounty)
         ai_resp = json.dumps({
             "decision": "MALICIOUS",
+            "severity": "CRITICAL",
             "vulnerability_type": "Hack",
             "evidence_line_snippet": "function vulnerable() { hack(); }",
             "reasoning": "bad"
@@ -110,17 +113,65 @@ class TestContractPaths(unittest.TestCase):
         
         print("EXEC OUT:", self.contract.execute_audit(audit_id))
         
-        # Should payout auditor (bounty + stake) and refund sponsor (remaining)
+        # Should payout auditor (2.0 bounty + 0.1 stake) and refund sponsor (3.0 remaining)
         self.assertEqual(len(TestContractPaths.transfers), 2)
         
         # Auditor payout
         self.assertEqual(TestContractPaths.transfers[0][0], "auditor_addr")
-        self.assertEqual(TestContractPaths.transfers[0][1], int(1.0 * 10**18) + int(0.1 * 10**18))
+        self.assertEqual(TestContractPaths.transfers[0][1], int(2.0 * 10**18) + int(0.1 * 10**18))
         
         # Sponsor refund
         self.assertEqual(TestContractPaths.transfers[1][0], "sponsor_addr")
-        self.assertEqual(TestContractPaths.transfers[1][1], int(4.0 * 10**18))
+        self.assertEqual(TestContractPaths.transfers[1][1], int(3.0 * 10**18))
         self.assertEqual(self.contract.project_balances[self.proj_id], 0)
+        
+        # Project marked COMPROMISED
+        proj = json.loads(self.contract.projects[self.proj_id])
+        self.assertEqual(proj["status"], "COMPROMISED")
+
+    def test_malicious_high_severity_active_pool(self):
+        mock_gl.message.sender_address = "auditor_addr"
+        stake_wei = int(0.1 * 10**18)
+        mock_gl.message.value = stake_wei
+        audit_id = self.contract.submit_audit(self.proj_id, 'fake report', 1, 1)
+        
+        # Mock AI response with HIGH severity (1.0 GEN bounty)
+        ai_resp = json.dumps({
+            "decision": "MALICIOUS",
+            "severity": "HIGH",
+            "vulnerability_type": "Reentrancy",
+            "evidence_line_snippet": "function vulnerable() { hack(); }",
+            "reasoning": "high severity finding"
+        })
+        mock_gl.eq_principle.prompt_non_comparative.return_value = ai_resp
+        
+        self.contract.execute_audit(audit_id)
+        
+        # Should payout auditor (1.0 bounty + 0.1 stake) ONLY
+        self.assertEqual(len(TestContractPaths.transfers), 1)
+        self.assertEqual(TestContractPaths.transfers[0][0], "auditor_addr")
+        self.assertEqual(TestContractPaths.transfers[0][1], int(1.0 * 10**18) + int(0.1 * 10**18))
+        
+        # Project must remain ACTIVE!
+        proj = json.loads(self.contract.projects[self.proj_id])
+        self.assertEqual(proj["status"], "ACTIVE")
+        # Pool balance decremented: 5.0 - 1.0 = 4.0 GEN
+        self.assertEqual(self.contract.project_balances[self.proj_id], int(4.0 * 10**18))
+        
+        # Verify researcher record
+        leaderboard = json.loads(self.contract.get_leaderboard())
+        self.assertEqual(len(leaderboard), 1)
+        self.assertEqual(leaderboard[0]["address"], "auditor_addr")
+        self.assertEqual(leaderboard[0]["total_earned_wei"], int(1.0 * 10**18))
+        self.assertEqual(leaderboard[0]["high_count"], 1)
+
+    def test_top_up_pool(self):
+        mock_gl.message.sender_address = "sponsor_addr"
+        mock_gl.message.value = int(2.5 * 10**18)
+        res = self.contract.top_up_pool(self.proj_id)
+        self.assertTrue("Pool topped up successfully" in res)
+        # New balance: 5.0 + 2.5 = 7.5 GEN
+        self.assertEqual(self.contract.project_balances[self.proj_id], int(7.5 * 10**18))
 
     def test_malicious_underfunded_pool(self):
         # Create underfunded project
@@ -135,6 +186,7 @@ class TestContractPaths(unittest.TestCase):
         
         ai_resp = json.dumps({
             "decision": "MALICIOUS",
+            "severity": "CRITICAL",
             "vulnerability_type": "Hack",
             "evidence_line_snippet": "function vulnerable() { hack(); }",
             "reasoning": "bad"
@@ -156,6 +208,7 @@ class TestContractPaths(unittest.TestCase):
         
         ai_resp = json.dumps({
             "decision": "SECURE",
+            "severity": "NONE",
             "vulnerability_type": "None",
             "evidence_line_snippet": "None",
             "reasoning": "looks good"

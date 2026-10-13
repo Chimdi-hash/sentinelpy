@@ -20,6 +20,7 @@ export interface Project {
   targetUrl: string;
   sponsor: string;
   poolBalance: string;
+  status: string;
 }
 
 export default function Home() {
@@ -33,6 +34,7 @@ export default function Home() {
   
   const [audits, setAudits] = useState<Audit[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
   
   // Audit Submission Modal State
   const [showAuditModal, setShowAuditModal] = useState(false);
@@ -40,6 +42,12 @@ export default function Home() {
   const [auditReport, setAuditReport] = useState("");
   const [auditStartLine, setAuditStartLine] = useState("");
   const [auditEndLine, setAuditEndLine] = useState("");
+  const [claimedSeverity, setClaimedSeverity] = useState("CRITICAL");
+
+  // Top Up Modal State
+  const [topUpProjectId, setTopUpProjectId] = useState<number | null>(null);
+  const [topUpAmount, setTopUpAmount] = useState('2.0');
+  const [isToppingUp, setIsToppingUp] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [readClient, setReadClient] = useState<any>(null);
@@ -85,7 +93,8 @@ export default function Home() {
           id: parseInt(proj.id), 
           targetUrl: proj.target_url || proj.targetUrl, 
           sponsor: proj.sponsor,
-          poolBalance: (parseInt(proj.pool_balance || "0") / 1e18).toFixed(2)
+          poolBalance: (parseInt(proj.pool_balance || "0") / 1e18).toFixed(2),
+          status: proj.status || "ACTIVE"
         }));
         setProjects(fetchedProjects.reverse());
       } catch (e) {
@@ -108,11 +117,24 @@ export default function Home() {
           analysis: audit.analysis,
           report: audit.report,
           startLine: audit.start_line,
-          endLine: audit.end_line
+          endLine: audit.end_line,
+          severity: audit.severity || "NONE"
         }));
         setAudits(fetchedAudits.reverse());
       } catch (e) {
         console.error("Failed to fetch all audits", e);
+      }
+
+      try {
+        const lbStr = await readClient.readContract({
+           address: contractAddress,
+           functionName: 'get_leaderboard',
+           args: []
+        });
+        const lb = JSON.parse(lbStr as string);
+        setLeaderboard(lb);
+      } catch (e) {
+        console.error("Failed to fetch leaderboard", e);
       }
       
       // Update balance automatically to reflect payouts
@@ -241,10 +263,11 @@ export default function Home() {
     setShowAuditModal(false);
     
     try {
+      const fullReport = `[CLAIMED SEVERITY: ${claimedSeverity}]\n${auditReport.trim()}`;
       await writeClient.writeContract({
         address: contractAddress,
         functionName: 'submit_audit',
-        args: [selectedAuditProjectId, auditReport.trim(), startLine, endLine],
+        args: [selectedAuditProjectId, fullReport, startLine, endLine],
         value: BigInt("100000000000000000"), // 0.1 GEN stake
       });
       alert("Audit request submitted successfully! Find it in the active audits list to execute.");
@@ -258,6 +281,39 @@ export default function Home() {
     } finally {
       setIsAuditingId(null);
       setSelectedAuditProjectId(null);
+    }
+  };
+
+  const handleTopUpPool = async () => {
+    if (!account || !writeClient || topUpProjectId === null) {
+      alert("Please connect your wallet first.");
+      return;
+    }
+    const amountFloat = parseFloat(topUpAmount);
+    if (isNaN(amountFloat) || amountFloat <= 0) {
+      alert("Please enter a valid GEN amount.");
+      return;
+    }
+    setIsToppingUp(true);
+    try {
+      const valWei = BigInt(Math.floor(amountFloat * 1e18));
+      await writeClient.writeContract({
+        address: contractAddress,
+        functionName: 'top_up_pool',
+        args: [topUpProjectId],
+        value: valWei,
+      });
+      alert(`Successfully added ${topUpAmount} GEN to Project #${topUpProjectId} bounty pool!`);
+      setTopUpProjectId(null);
+      setTimeout(() => {
+        fetchData();
+        if (account) updateBalance(account);
+      }, 2000);
+    } catch (err: any) {
+      console.error(err);
+      alert(`Error topping up pool:\n\n${err?.message || String(err)}`);
+    } finally {
+      setIsToppingUp(false);
     }
   };
 
@@ -293,6 +349,7 @@ export default function Home() {
         
         <div className="nav-links">
           <div className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</div>
+          <div className={`nav-item ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => setActiveTab('leaderboard')}>Leaderboard</div>
           <div className={`nav-item ${activeTab === 'threats' ? 'active' : ''}`} onClick={() => setActiveTab('threats')}>Threat Intelligence</div>
           <div className={`nav-item ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => setActiveTab('contracts')}>Verified Projects</div>
           <div className={`nav-item ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>Audit Logs</div>
@@ -421,9 +478,9 @@ export default function Home() {
                         <table className="data-table">
                           <thead>
                             <tr>
-                              <th style={{ padding: '0.75rem 1rem' }}>Project Target</th>
+                              <th style={{ padding: '0.75rem 1rem' }}>Project Target & Status</th>
                               <th style={{ padding: '0.75rem 1rem' }}>Sponsor</th>
-                              <th style={{ padding: '0.75rem 1rem' }}>Bounty Pool</th>
+                              <th style={{ padding: '0.75rem 1rem' }}>Pool & Tiered Bounties</th>
                               <th style={{ padding: '0.75rem 1rem' }}>Actions</th>
                             </tr>
                           </thead>
@@ -431,26 +488,68 @@ export default function Home() {
                             {projects.map((proj, i) => (
                               <tr key={proj.id} className="proposal-main-row" style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
                                 <td className="table-cell">
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span className="text-muted">❖</span>
-                                    <span style={{ wordBreak: 'break-all', maxWidth: '100%', display: 'inline-block' }} className="font-mono">{proj.targetUrl}</span>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                      <span className="text-muted">❖</span>
+                                      <span style={{ wordBreak: 'break-all', maxWidth: '100%', display: 'inline-block' }} className="font-mono">{proj.targetUrl}</span>
+                                    </div>
+                                    <div>
+                                      <span style={{ 
+                                        fontSize: '0.65rem', 
+                                        padding: '0.15rem 0.4rem', 
+                                        borderRadius: '3px',
+                                        textTransform: 'uppercase',
+                                        fontWeight: 600,
+                                        background: proj.status === 'ACTIVE' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                        color: proj.status === 'ACTIVE' ? 'var(--success)' : 'var(--danger)',
+                                        border: `1px solid ${proj.status === 'ACTIVE' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`
+                                      }}>
+                                        {proj.status}
+                                      </span>
+                                    </div>
                                   </div>
                                 </td>
                                 <td className="table-cell font-mono text-muted" style={{ fontSize: '0.7rem' }}>
                                   {proj.sponsor.slice(0,6)}...{proj.sponsor.slice(-4)}
                                 </td>
                                 <td className="table-cell">
-                                  <span style={{ color: 'var(--success)' }}>{proj.poolBalance} GEN</span>
+                                  <div>
+                                    <span style={{ color: 'var(--success)', fontWeight: 600 }}>{proj.poolBalance} GEN</span>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                                      Crit: 2.0 | High: 1.0 | Med: 0.4 | Low: 0.1
+                                    </div>
+                                  </div>
                                 </td>
                                 <td className="table-cell">
-                                  <button 
-                                    className="cyber-button" 
-                                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', width: 'auto' }}
-                                    onClick={() => openAuditModal(proj.id)}
-                                    disabled={isAuditingId === proj.id || !account}
-                                  >
-                                    {isAuditingId === proj.id ? '...' : 'Hunt Bugs (Stake 0.1)'}
-                                  </button>
+                                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                    {proj.status === 'ACTIVE' && (
+                                      <>
+                                        <button 
+                                          className="cyber-button" 
+                                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', width: 'auto' }}
+                                          onClick={() => openAuditModal(proj.id)}
+                                          disabled={isAuditingId === proj.id || !account}
+                                        >
+                                          {isAuditingId === proj.id ? '...' : 'Hunt Bugs'}
+                                        </button>
+                                        <button 
+                                          className="cyber-button secondary" 
+                                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', width: 'auto' }}
+                                          onClick={() => {
+                                            setTopUpProjectId(proj.id);
+                                            setTopUpAmount('2.0');
+                                          }}
+                                          disabled={!account}
+                                          title="Top Up Bounty Pool"
+                                        >
+                                          + Top Up
+                                        </button>
+                                      </>
+                                    )}
+                                    {proj.status !== 'ACTIVE' && (
+                                      <span className="text-muted" style={{ fontSize: '0.7rem' }}>Program Closed</span>
+                                    )}
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -498,6 +597,92 @@ export default function Home() {
           </>
         )}
         
+        {activeTab === 'leaderboard' && (
+          <div className="cyber-panel" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <div className="panel-header">
+              <div className="panel-title text-cyan">WHITE-HAT RESEARCHER LEADERBOARD</div>
+              <div className="text-cyan font-mono" style={{ fontSize: '0.75rem' }}>{leaderboard.length} Verified Researchers</div>
+            </div>
+            <div className="panel-body" style={{ padding: 0 }}>
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th style={{ padding: '0.75rem 1rem' }}>Rank & Researcher</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Reputation Tier</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Total Earned</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Exploits Verified (Crit / High / Med / Low)</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>False Alarms</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.map((res, i) => {
+                      const earnedGen = (res.total_earned_wei / 1e18).toFixed(2);
+                      const rankTier = parseFloat(earnedGen) >= 2.0 
+                        ? { title: 'Principal Auditor', color: '#ef4444' }
+                        : parseFloat(earnedGen) >= 1.0 
+                        ? { title: 'Senior Hunter', color: '#f97316' }
+                        : parseFloat(earnedGen) >= 0.1 
+                        ? { title: 'Verified Researcher', color: 'var(--primary-cyan)' }
+                        : { title: 'Security Scout', color: 'var(--text-muted)' };
+
+                      return (
+                        <tr key={res.address} className="proposal-main-row" style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                          <td className="table-cell">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <span style={{ 
+                                fontWeight: 700, 
+                                color: i === 0 ? '#fbbf24' : i === 1 ? '#e2e8f0' : i === 2 ? '#b45309' : 'var(--text-muted)',
+                                fontSize: '0.85rem' 
+                              }}>
+                                #{i + 1}
+                              </span>
+                              <span className="font-mono" style={{ fontSize: '0.75rem' }}>
+                                {res.address.slice(0, 8)}...{res.address.slice(-6)}
+                              </span>
+                              {account && res.address.toLowerCase() === account.toLowerCase() && (
+                                <span style={{ fontSize: '0.65rem', background: 'rgba(6, 182, 212, 0.2)', color: 'var(--primary-cyan)', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>YOU</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="table-cell">
+                            <span style={{ 
+                              color: rankTier.color, 
+                              border: `1px solid ${rankTier.color}40`, 
+                              padding: '0.2rem 0.4rem', 
+                              borderRadius: '4px',
+                              fontSize: '0.65rem',
+                              fontWeight: 600,
+                              textTransform: 'uppercase'
+                            }}>
+                              {rankTier.title}
+                            </span>
+                          </td>
+                          <td className="table-cell font-mono" style={{ color: 'var(--success)', fontWeight: 600 }}>
+                            {earnedGen} GEN
+                          </td>
+                          <td className="table-cell font-mono" style={{ fontSize: '0.75rem' }}>
+                            <span style={{ color: '#ef4444', marginRight: '0.4rem' }}>{res.critical_count} Crit</span>
+                            <span style={{ color: '#f97316', marginRight: '0.4rem' }}>{res.high_count} High</span>
+                            <span style={{ color: '#eab308', marginRight: '0.4rem' }}>{res.medium_count} Med</span>
+                            <span style={{ color: 'var(--primary-cyan)' }}>{res.low_count} Low</span>
+                          </td>
+                          <td className="table-cell font-mono text-muted" style={{ fontSize: '0.75rem' }}>
+                            {res.slashed_count} slashed
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {leaderboard.length === 0 && (
+                      <tr><td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No bounty payouts recorded yet. Be the first to claim a bounty!</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'threats' && (
           <div className="cyber-panel purple-accent" style={{ animation: 'fadeIn 0.3s ease-out' }}>
             <div className="panel-header">
@@ -594,9 +779,24 @@ export default function Home() {
         {/* Audit Submission Modal */}
         {showAuditModal && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-            <div className="cyber-panel" style={{ width: '100%', maxWidth: '500px', padding: '1.5rem', background: '#0a0a0a', border: '1px solid var(--primary-cyan)', borderRadius: '8px' }}>
+            <div className="cyber-panel" style={{ width: '100%', maxWidth: '520px', padding: '1.5rem', background: '#0a0a0a', border: '1px solid var(--primary-cyan)', borderRadius: '8px' }}>
               <div className="panel-title text-cyan" style={{ marginBottom: '1rem' }}>SUBMIT VULNERABILITY REPORT</div>
               
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="text-muted" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Claimed Severity Tier</label>
+                <select 
+                  className="cyber-input" 
+                  style={{ width: '100%', background: '#111', color: 'var(--text-main)', border: '1px solid rgba(255,255,255,0.15)' }}
+                  value={claimedSeverity}
+                  onChange={(e) => setClaimedSeverity(e.target.value)}
+                >
+                  <option value="CRITICAL">CRITICAL — Protocol Insolvency / Direct Drain (2.0 GEN)</option>
+                  <option value="HIGH">HIGH — Severe Exploit / Unauthorized State Change (1.0 GEN)</option>
+                  <option value="MEDIUM">MEDIUM — Conditional Logic / DoS / Edge Exploit (0.4 GEN)</option>
+                  <option value="LOW">LOW — Minor Flaw / Informational (0.1 GEN)</option>
+                </select>
+              </div>
+
               <div style={{ marginBottom: '1rem' }}>
                 <label className="text-muted" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Specific Vulnerability Report (What is the bug, how does it work, where is it?)</label>
                 <textarea 
@@ -604,7 +804,7 @@ export default function Home() {
                   style={{ width: '100%', minHeight: '100px', resize: 'vertical' }}
                   value={auditReport}
                   onChange={(e) => setAuditReport(e.target.value)}
-                  placeholder="Describe the vulnerability..."
+                  placeholder="Describe the vulnerability in detail..."
                 />
               </div>
 
@@ -617,7 +817,7 @@ export default function Home() {
                     style={{ width: '100%' }}
                     value={auditStartLine}
                     onChange={(e) => setAuditStartLine(e.target.value)}
-                    placeholder="e.g. 42"
+                    placeholder="e.g. 8"
                   />
                 </div>
                 <div style={{ flex: 1 }}>
@@ -628,7 +828,7 @@ export default function Home() {
                     style={{ width: '100%' }}
                     value={auditEndLine}
                     onChange={(e) => setAuditEndLine(e.target.value)}
-                    placeholder="e.g. 60"
+                    placeholder="e.g. 12"
                   />
                 </div>
               </div>
@@ -636,6 +836,36 @@ export default function Home() {
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                 <button className="cyber-button" style={{ background: 'transparent', borderColor: 'var(--text-muted)', color: 'var(--text-muted)' }} onClick={() => setShowAuditModal(false)}>Cancel</button>
                 <button className="cyber-button" onClick={submitAuditModal}>Submit & Stake 0.1 GEN</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Top Up Pool Modal */}
+        {topUpProjectId !== null && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div className="cyber-panel" style={{ width: '100%', maxWidth: '440px', padding: '1.5rem', background: '#0a0a0a', border: '1px solid var(--primary-cyan)', borderRadius: '8px' }}>
+              <div className="panel-title text-cyan" style={{ marginBottom: '1rem' }}>TOP UP BOUNTY POOL (PROJECT #{topUpProjectId})</div>
+              
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="text-muted" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Deposit Additional GEN (for active payouts)</label>
+                <input 
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  className="cyber-input" 
+                  style={{ width: '100%' }}
+                  value={topUpAmount}
+                  onChange={(e) => setTopUpAmount(e.target.value)}
+                  placeholder="e.g. 2.0"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button className="cyber-button" style={{ background: 'transparent', borderColor: 'var(--text-muted)', color: 'var(--text-muted)' }} onClick={() => setTopUpProjectId(null)}>Cancel</button>
+                <button className="cyber-button" disabled={isToppingUp} onClick={handleTopUpPool}>
+                  {isToppingUp ? 'Depositing...' : `Deposit ${topUpAmount} GEN`}
+                </button>
               </div>
             </div>
           </div>

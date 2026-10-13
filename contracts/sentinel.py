@@ -12,13 +12,68 @@ class _Recipient:
 class Sentinelpy(gl.Contract):
     audit_counter: u256
     project_counter: u256
+    researcher_counter: u256
     audits: TreeMap[u256, str]
     projects: TreeMap[u256, str]
     project_balances: TreeMap[u256, u256]
+    researchers: TreeMap[u256, str]
+    researcher_indices: TreeMap[str, u256]
 
     def __init__(self):
         self.audit_counter = u256(0)
         self.project_counter = u256(0)
+        self.researcher_counter = u256(0)
+
+    def _record_researcher_win(self, submitter_addr: str, bounty_wei: int, severity: str):
+        addr_str = str(submitter_addr)
+        if addr_str not in self.researcher_indices:
+            idx = self.researcher_counter
+            self.researcher_indices[addr_str] = idx
+            rec = {
+                "address": addr_str,
+                "total_earned_wei": bounty_wei,
+                "bounties_won": 1,
+                "critical_count": 1 if severity == "CRITICAL" else 0,
+                "high_count": 1 if severity == "HIGH" else 0,
+                "medium_count": 1 if severity == "MEDIUM" else 0,
+                "low_count": 1 if severity == "LOW" else 0,
+                "slashed_count": 0
+            }
+            self.researchers[idx] = json.dumps(rec)
+            self.researcher_counter += 1
+        else:
+            idx = self.researcher_indices[addr_str]
+            rec = json.loads(self.researchers[idx])
+            rec["total_earned_wei"] = rec.get("total_earned_wei", 0) + bounty_wei
+            rec["bounties_won"] = rec.get("bounties_won", 0) + 1
+            if severity == "CRITICAL": rec["critical_count"] = rec.get("critical_count", 0) + 1
+            elif severity == "HIGH": rec["high_count"] = rec.get("high_count", 0) + 1
+            elif severity == "MEDIUM": rec["medium_count"] = rec.get("medium_count", 0) + 1
+            elif severity == "LOW": rec["low_count"] = rec.get("low_count", 0) + 1
+            self.researchers[idx] = json.dumps(rec)
+
+    def _record_researcher_slash(self, submitter_addr: str):
+        addr_str = str(submitter_addr)
+        if addr_str not in self.researcher_indices:
+            idx = self.researcher_counter
+            self.researcher_indices[addr_str] = idx
+            rec = {
+                "address": addr_str,
+                "total_earned_wei": 0,
+                "bounties_won": 0,
+                "critical_count": 0,
+                "high_count": 0,
+                "medium_count": 0,
+                "low_count": 0,
+                "slashed_count": 1
+            }
+            self.researchers[idx] = json.dumps(rec)
+            self.researcher_counter += 1
+        else:
+            idx = self.researcher_indices[addr_str]
+            rec = json.loads(self.researchers[idx])
+            rec["slashed_count"] = rec.get("slashed_count", 0) + 1
+            self.researchers[idx] = json.dumps(rec)
 
     @gl.public.write.payable
     def register_project(self, target_url: str, content_hash: str) -> u256:
@@ -113,6 +168,22 @@ class Sentinelpy(gl.Contract):
             
         return "Project closed and funds withdrawn"
 
+    @gl.public.write.payable
+    def top_up_pool(self, project_id: u256) -> str:
+        """Sponsor or community deposits additional GEN into an active project's bounty pool."""
+        if project_id not in self.projects:
+            raise Exception("Project not found")
+        project = json.loads(self.projects[project_id])
+        if project.get("status") in ["CLOSED", "COMPROMISED"]:
+            raise Exception(f"Cannot top up pool. Project status is {project.get('status')}")
+        if gl.message.value <= 0:
+            raise Exception("Must attach GEN to top up pool")
+            
+        current_balance = int(self.project_balances.get(project_id, u256(0)))
+        new_balance = current_balance + int(gl.message.value)
+        self.project_balances[project_id] = u256(new_balance)
+        return f"Pool topped up successfully. New balance: {new_balance}"
+
     @gl.public.write
     def execute_audit(self, audit_id: u256) -> str:
         """GenVM executes the audit, fetches source code, and determines payout."""
@@ -192,17 +263,24 @@ You are an expert blockchain security auditor. The auditor has submitted a speci
 Your task is to adjudicate THIS SPECIFIC reported vulnerability. Do not perform a broad whole-source scan for other issues.
 Analyze the source code to determine if the SPECIFIC vulnerability described in the report is valid, reachable, and has a real security impact.
 
+If valid, assess its impact severity using standard CVSS guidelines:
+- CRITICAL: Direct, unrestricted loss of funds, full protocol insolvency, or permanent contract freeze/takeover.
+- HIGH: Significant theft of funds under specific conditions, or severe unauthorized state/permission tampering.
+- MEDIUM: Conditional exploit, logic manipulation, or denial-of-service without permanent fund loss.
+- LOW: Minor logic flaw, informational issue, or edge-case without financial impact.
+
 Return a JSON response with EXACTLY these keys:
 - 'decision': 'MALICIOUS' (if the reported bug is valid and impactful) or 'SECURE' (if the reported bug is invalid, unreachable, or harmless).
-- 'vulnerability_type': Short name of the vulnerability (e.g. 'Reentrancy', 'None')
+- 'severity': 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', or 'NONE' (if SECURE).
+- 'vulnerability_type': Short name of the vulnerability (e.g. 'Reentrancy', 'Access Control', 'None')
 - 'evidence_line_snippet': The exact line of code that causes the issue (or 'None')
-- 'reasoning': Explanation of why the reported bug is valid or invalid.
+- 'reasoning': Explanation of why the reported bug is valid or invalid, justifying the severity level.
 """
             
         response = gl.eq_principle.prompt_non_comparative(
             get_audit_context,
-            task="Adjudicate the specific vulnerability report against the provided source code.",
-            criteria="Validators MUST verify that the reported vulnerability is actually reachable and impactful in the provided bounded source code slice. Validators MUST verify that the extracted 'evidence_line_snippet' actually exists verbatim in the bounded source code slice. Reject if the snippet is fabricated, or if the reported bug is not genuinely exploitable."
+            task="Adjudicate the specific vulnerability report against the provided source code and classify severity.",
+            criteria="Validators MUST verify that the reported vulnerability is actually reachable and impactful in the provided bounded source code slice. Validators MUST verify that the extracted 'evidence_line_snippet' actually exists verbatim in the bounded source code slice. Reject if the snippet is fabricated, or if the reported bug is not genuinely exploitable. If valid, classify severity accurately as CRITICAL, HIGH, MEDIUM, or LOW."
         )
         
         # Parse JSON
@@ -219,11 +297,17 @@ Return a JSON response with EXACTLY these keys:
             result = json.loads(clean_response)
             
             # 1. Strict schema validation
-            expected_keys = {"decision", "vulnerability_type", "evidence_line_snippet", "reasoning"}
+            expected_keys = {"decision", "severity", "vulnerability_type", "evidence_line_snippet", "reasoning"}
             if set(result.keys()) != expected_keys:
                 raise Exception(f"Exact schema mismatch in AI response. Expected exactly: {expected_keys}")
             if result["decision"] not in ["SECURE", "MALICIOUS"]:
                 raise Exception(f"Invalid decision: {result['decision']}")
+            if result["severity"] not in ["CRITICAL", "HIGH", "MEDIUM", "LOW", "NONE"]:
+                raise Exception(f"Invalid severity: {result['severity']}")
+            if result["decision"] == "SECURE" and result["severity"] != "NONE":
+                raise Exception("SECURE decision must have severity 'NONE'.")
+            if result["decision"] == "MALICIOUS" and result["severity"] not in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+                raise Exception("MALICIOUS decision must specify CRITICAL, HIGH, MEDIUM, or LOW severity.")
             
             # 2. Verify cited evidence before settlement
             if result["decision"] == "MALICIOUS":
@@ -245,50 +329,83 @@ Return a JSON response with EXACTLY these keys:
             return str(e)
             
         audit["status"] = result["decision"]
+        audit["severity"] = result.get("severity", "NONE")
         
         # Format the analysis to display the substantive evidence nicely
         formatted_analysis = (
+            f"Decision: {result.get('decision', '')}\n"
+            f"Severity: {result.get('severity', 'NONE')}\n"
             f"Vulnerability: {result.get('vulnerability_type', 'None')}\n"
             f"Evidence Snippet: {result.get('evidence_line_snippet', 'None')}\n"
             f"Reasoning: {result.get('reasoning', '')}"
         )
         audit["analysis"] = formatted_analysis
         
-        # 3. Solvent Payout Logic
+        # 3. Solvent Multi-Tier Payout Logic
         submitter_addr = Address(audit["submitter"])
         stake_wei = int(audit.get("stake", int(0.1 * 10**18)))
         
         if audit["status"] == "MALICIOUS":
-            bounty_wei = int(1.0 * 10**18)
+            severity = result["severity"]
+            severity_bounties = {
+                "CRITICAL": int(2.0 * 10**18),
+                "HIGH": int(1.0 * 10**18),
+                "MEDIUM": int(0.4 * 10**18),
+                "LOW": int(0.1 * 10**18),
+            }
+            bounty_wei = severity_bounties.get(severity, int(1.0 * 10**18))
             current_pool = int(self.project_balances.get(project_id, u256(0)))
             
-            # Mark project as compromised to prevent future audits
-            project["status"] = "COMPROMISED"
-            self.projects[project_id] = json.dumps(project)
-            
-            if current_pool >= bounty_wei:
-                # Pool is solvent.
-                # Payout Stake + Bounty to Auditor
-                _Recipient(submitter_addr).emit_transfer(value=u256(bounty_wei + stake_wei), on='finalized')
-                audit["payout_status"] = "BOUNTY_PAID"
+            if severity == "CRITICAL":
+                # Critical bug: Compromises whole project & sweeps remaining escrow
+                project["status"] = "COMPROMISED"
+                self.projects[project_id] = json.dumps(project)
                 
-                # Full escrow settlement: Refund remaining pool to sponsor
-                remaining_pool = current_pool - bounty_wei
-                if remaining_pool > 0:
-                    sponsor_addr = Address(project["sponsor"])
-                    _Recipient(sponsor_addr).emit_transfer(value=u256(remaining_pool), on='finalized')
-                self.project_balances[project_id] = u256(0)
+                if current_pool >= bounty_wei:
+                    # Pool is solvent. Payout stake + bounty to auditor
+                    _Recipient(submitter_addr).emit_transfer(value=u256(bounty_wei + stake_wei), on='finalized')
+                    audit["payout_status"] = "BOUNTY_PAID"
+                    self._record_researcher_win(audit["submitter"], bounty_wei, severity)
+                    
+                    # Full escrow settlement: Refund remaining pool to sponsor
+                    remaining_pool = current_pool - bounty_wei
+                    if remaining_pool > 0:
+                        sponsor_addr = Address(project["sponsor"])
+                        _Recipient(sponsor_addr).emit_transfer(value=u256(remaining_pool), on='finalized')
+                    self.project_balances[project_id] = u256(0)
+                else:
+                    # Pool underfunded. Settle full remaining balance to auditor + refund stake.
+                    audit["payout_status"] = "POOL_DEPLETED_PARTIAL_PAYOUT"
+                    payout_amount = current_pool + stake_wei
+                    _Recipient(submitter_addr).emit_transfer(value=u256(payout_amount), on='finalized')
+                    self._record_researcher_win(audit["submitter"], current_pool, severity)
+                    self.project_balances[project_id] = u256(0)
             else:
-                # Pool underfunded. Settle full remaining balance to auditor + refund stake.
-                audit["payout_status"] = "POOL_DEPLETED_PARTIAL_PAYOUT"
-                payout_amount = current_pool + stake_wei
-                _Recipient(submitter_addr).emit_transfer(value=u256(payout_amount), on='finalized')
-                self.project_balances[project_id] = u256(0)
+                # Non-critical bug (HIGH, MEDIUM, LOW): Keep project ACTIVE if solvent!
+                if current_pool >= bounty_wei:
+                    _Recipient(submitter_addr).emit_transfer(value=u256(bounty_wei + stake_wei), on='finalized')
+                    audit["payout_status"] = "BOUNTY_PAID"
+                    self._record_researcher_win(audit["submitter"], bounty_wei, severity)
+                    
+                    # Deduct bounty from pool, project stays ACTIVE!
+                    new_pool = current_pool - bounty_wei
+                    self.project_balances[project_id] = u256(new_pool)
+                    self.projects[project_id] = json.dumps(project)
+                else:
+                    # Pool underfunded for this tier: Settle remaining pool and mark project COMPROMISED
+                    project["status"] = "COMPROMISED"
+                    self.projects[project_id] = json.dumps(project)
+                    audit["payout_status"] = "POOL_DEPLETED_PARTIAL_PAYOUT"
+                    payout_amount = current_pool + stake_wei
+                    _Recipient(submitter_addr).emit_transfer(value=u256(payout_amount), on='finalized')
+                    self._record_researcher_win(audit["submitter"], current_pool, severity)
+                    self.project_balances[project_id] = u256(0)
         else:
             # Code is SECURE. False alarm by auditor.
             audit["payout_status"] = "STAKE_SLASHED"
             # Explicitly burn the 0.1 GEN stake by sending it to the null address
             _Recipient(Address("0x0000000000000000000000000000000000000000")).emit_transfer(value=u256(stake_wei), on='finalized')
+            self._record_researcher_slash(audit["submitter"])
         
         self.audits[audit_id] = json.dumps(audit)
         return json.dumps(result)
@@ -339,3 +456,30 @@ Return a JSON response with EXACTLY these keys:
                     audit["target_url"] = project["target_url"]
                 all_auds.append(audit)
         return json.dumps(all_auds)
+
+    @gl.public.view
+    def get_leaderboard(self) -> str:
+        all_researchers = []
+        for i in range(int(self.researcher_counter)):
+            rid = u256(i)
+            if rid in self.researchers:
+                all_researchers.append(json.loads(self.researchers[rid]))
+        all_researchers.sort(key=lambda x: x.get("total_earned_wei", 0), reverse=True)
+        return json.dumps(all_researchers)
+
+    @gl.public.view
+    def get_researcher(self, addr: str) -> str:
+        addr_str = str(addr)
+        if addr_str not in self.researcher_indices:
+            return json.dumps({
+                "address": addr_str,
+                "total_earned_wei": 0,
+                "bounties_won": 0,
+                "critical_count": 0,
+                "high_count": 0,
+                "medium_count": 0,
+                "low_count": 0,
+                "slashed_count": 0
+            })
+        idx = self.researcher_indices[addr_str]
+        return self.researchers[idx]
