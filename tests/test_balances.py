@@ -129,7 +129,7 @@ class TestContractPaths(unittest.TestCase):
         proj = json.loads(self.contract.projects[self.proj_id])
         self.assertEqual(proj["status"], "COMPROMISED")
 
-    def test_malicious_high_severity_active_pool(self):
+    def test_malicious_high_severity_closes_and_refunds(self):
         mock_gl.message.sender_address = "auditor_addr"
         stake_wei = int(0.1 * 10**18)
         mock_gl.message.value = stake_wei
@@ -147,16 +147,18 @@ class TestContractPaths(unittest.TestCase):
         
         self.contract.execute_audit(audit_id)
         
-        # Should payout auditor (1.0 bounty + 0.1 stake) ONLY
-        self.assertEqual(len(TestContractPaths.transfers), 1)
+        # Should payout auditor (1.0 bounty + 0.1 stake) AND refund sponsor (4.0 remaining)
+        self.assertEqual(len(TestContractPaths.transfers), 2)
         self.assertEqual(TestContractPaths.transfers[0][0], "auditor_addr")
         self.assertEqual(TestContractPaths.transfers[0][1], int(1.0 * 10**18) + int(0.1 * 10**18))
+        self.assertEqual(TestContractPaths.transfers[1][0], "sponsor_addr")
+        self.assertEqual(TestContractPaths.transfers[1][1], int(4.0 * 10**18))
         
-        # Project must remain ACTIVE!
+        # Project must be closed and marked COMPROMISED!
         proj = json.loads(self.contract.projects[self.proj_id])
-        self.assertEqual(proj["status"], "ACTIVE")
-        # Pool balance decremented: 5.0 - 1.0 = 4.0 GEN
-        self.assertEqual(self.contract.project_balances[self.proj_id], int(4.0 * 10**18))
+        self.assertEqual(proj["status"], "COMPROMISED")
+        # Pool balance is 0
+        self.assertEqual(self.contract.project_balances[self.proj_id], 0)
         
         # Verify researcher record
         leaderboard = json.loads(self.contract.get_leaderboard())

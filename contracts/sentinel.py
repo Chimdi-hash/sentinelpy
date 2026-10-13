@@ -356,50 +356,29 @@ Return a JSON response with EXACTLY these keys:
             bounty_wei = severity_bounties.get(severity, int(1.0 * 10**18))
             current_pool = int(self.project_balances.get(project_id, u256(0)))
             
-            if severity == "CRITICAL":
-                # Critical bug: Compromises whole project & sweeps remaining escrow
-                project["status"] = "COMPROMISED"
-                self.projects[project_id] = json.dumps(project)
+            # Immediately close and mark project as COMPROMISED across all severity levels
+            project["status"] = "COMPROMISED"
+            self.projects[project_id] = json.dumps(project)
+            
+            if current_pool >= bounty_wei:
+                # Pool is solvent. Payout stake + tier bounty to auditor
+                _Recipient(submitter_addr).emit_transfer(value=u256(bounty_wei + stake_wei), on='finalized')
+                audit["payout_status"] = "BOUNTY_PAID"
+                self._record_researcher_win(audit["submitter"], bounty_wei, severity)
                 
-                if current_pool >= bounty_wei:
-                    # Pool is solvent. Payout stake + bounty to auditor
-                    _Recipient(submitter_addr).emit_transfer(value=u256(bounty_wei + stake_wei), on='finalized')
-                    audit["payout_status"] = "BOUNTY_PAID"
-                    self._record_researcher_win(audit["submitter"], bounty_wei, severity)
-                    
-                    # Full escrow settlement: Refund remaining pool to sponsor
-                    remaining_pool = current_pool - bounty_wei
-                    if remaining_pool > 0:
-                        sponsor_addr = Address(project["sponsor"])
-                        _Recipient(sponsor_addr).emit_transfer(value=u256(remaining_pool), on='finalized')
-                    self.project_balances[project_id] = u256(0)
-                else:
-                    # Pool underfunded. Settle full remaining balance to auditor + refund stake.
-                    audit["payout_status"] = "POOL_DEPLETED_PARTIAL_PAYOUT"
-                    payout_amount = current_pool + stake_wei
-                    _Recipient(submitter_addr).emit_transfer(value=u256(payout_amount), on='finalized')
-                    self._record_researcher_win(audit["submitter"], current_pool, severity)
-                    self.project_balances[project_id] = u256(0)
+                # Full escrow settlement: Immediately refund remaining pool to sponsor
+                remaining_pool = current_pool - bounty_wei
+                if remaining_pool > 0:
+                    sponsor_addr = Address(project["sponsor"])
+                    _Recipient(sponsor_addr).emit_transfer(value=u256(remaining_pool), on='finalized')
+                self.project_balances[project_id] = u256(0)
             else:
-                # Non-critical bug (HIGH, MEDIUM, LOW): Keep project ACTIVE if solvent!
-                if current_pool >= bounty_wei:
-                    _Recipient(submitter_addr).emit_transfer(value=u256(bounty_wei + stake_wei), on='finalized')
-                    audit["payout_status"] = "BOUNTY_PAID"
-                    self._record_researcher_win(audit["submitter"], bounty_wei, severity)
-                    
-                    # Deduct bounty from pool, project stays ACTIVE!
-                    new_pool = current_pool - bounty_wei
-                    self.project_balances[project_id] = u256(new_pool)
-                    self.projects[project_id] = json.dumps(project)
-                else:
-                    # Pool underfunded for this tier: Settle remaining pool and mark project COMPROMISED
-                    project["status"] = "COMPROMISED"
-                    self.projects[project_id] = json.dumps(project)
-                    audit["payout_status"] = "POOL_DEPLETED_PARTIAL_PAYOUT"
-                    payout_amount = current_pool + stake_wei
-                    _Recipient(submitter_addr).emit_transfer(value=u256(payout_amount), on='finalized')
-                    self._record_researcher_win(audit["submitter"], current_pool, severity)
-                    self.project_balances[project_id] = u256(0)
+                # Pool underfunded. Settle full remaining balance to auditor + refund stake.
+                audit["payout_status"] = "POOL_DEPLETED_PARTIAL_PAYOUT"
+                payout_amount = current_pool + stake_wei
+                _Recipient(submitter_addr).emit_transfer(value=u256(payout_amount), on='finalized')
+                self._record_researcher_win(audit["submitter"], current_pool, severity)
+                self.project_balances[project_id] = u256(0)
         else:
             # Code is SECURE. False alarm by auditor.
             audit["payout_status"] = "STAKE_SLASHED"
