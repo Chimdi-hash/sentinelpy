@@ -1,680 +1,852 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import ProposalCard from '../components/ProposalCard';
+import React, { useState, useEffect, useCallback } from 'react';
+import Navbar from '../components/Navbar';
+import ProfileModal from '../components/ProfileModal';
+import { 
+  Briefcase, 
+  PlusCircle, 
+  Send, 
+  CheckCircle, 
+  AlertCircle, 
+  ShieldCheck, 
+  RotateCcw, 
+  ArrowDownToLine, 
+  ExternalLink, 
+  Sparkles, 
+  Coins, 
+  User, 
+  ShieldAlert,
+  Search,
+  Filter,
+  CheckCircle2,
+  Clock,
+  FileText
+} from 'lucide-react';
 import { createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
-import { custom } from 'viem';
+import { custom, parseEther, formatEther } from 'viem';
 
-export interface Audit {
-  id: number;
-  projectId: number;
-  targetUrl: string;
-  status: string;
-  payoutStatus: string;
-  analysis: string;
+export interface Job {
+  id: string;
+  title: string;
+  description: string;
+  rubric: string;
+  client: string;
+  status: 'OPEN' | 'IN_REVIEW' | 'AWAITING_CLIENT_ACTION' | 'COMPLETED' | 'CANCELLED_REFUNDED';
+  min_stake_wei: string;
+  escrow_balance: string;
+  pending_submissions: number;
 }
 
-export interface Project {
-  id: number;
-  targetUrl: string;
-  sponsor: string;
-  poolBalance: string;
-  status: string;
+export interface Submission {
+  id: string;
+  job_id: string;
+  worker: string;
+  stake_wei: string;
+  deliverable_url: string;
+  notes: string;
+  status: 'Pending' | 'APPROVED' | 'REJECTED' | 'Error';
+  evaluation_trace: string;
+  payout_status: string;
+}
+
+export interface WorkerRecord {
+  address: string;
+  total_earned_wei: number;
+  jobs_completed: number;
+  slashed_count: number;
 }
 
 export default function Home() {
-  const [url, setUrl] = useState('');
-  const [fundAmount, setFundAmount] = useState('5.0');
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [isAuditingId, setIsAuditingId] = useState<number | null>(null);
-  
   const [account, setAccount] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
-  
-  const [audits, setAudits] = useState<Audit[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  
-  // Audit Submission Modal State
-  const [showAuditModal, setShowAuditModal] = useState(false);
-  const [selectedAuditProjectId, setSelectedAuditProjectId] = useState<number | null>(null);
-  const [auditReport, setAuditReport] = useState("");
-  const [auditStartLine, setAuditStartLine] = useState("");
-  const [auditEndLine, setAuditEndLine] = useState("");
-  const [claimedSeverity, setClaimedSeverity] = useState("CRITICAL");
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'gigs' | 'my-gigs' | 'leaderboard'>('gigs');
 
-  // Top Up Modal State
-  const [topUpProjectId, setTopUpProjectId] = useState<number | null>(null);
-  const [topUpAmount, setTopUpAmount] = useState('2.0');
-  const [isToppingUp, setIsToppingUp] = useState(false);
+  // Gigs & Submissions state
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [leaderboard, setLeaderboard] = useState<WorkerRecord[]>([]);
+  const [protocolStats, setProtocolStats] = useState<any>({});
+  const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [readClient, setReadClient] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [writeClient, setWriteClient] = useState<any>(null);
+  // Modals state
+  const [showPostJobModal, setShowPostJobModal] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showRelistModal, setShowRelistModal] = useState(false);
+
+  // Post Job form
+  const [jobTitle, setJobTitle] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [jobRubric, setJobRubric] = useState('');
+  const [jobEscrowGen, setJobEscrowGen] = useState('1.0');
+  const [jobMinStakeGen, setJobMinStakeGen] = useState('0.1');
+
+  // Submit Deliverable form
+  const [selectedJobForSubmit, setSelectedJobForSubmit] = useState<Job | null>(null);
+  const [deliverableUrl, setDeliverableUrl] = useState('');
+  const [deliverableNotes, setDeliverableNotes] = useState('');
+  const [stakeAmountGen, setStakeAmountGen] = useState('0.1');
+
+  // Relist form
+  const [selectedJobForRelist, setSelectedJobForRelist] = useState<Job | null>(null);
+  const [updatedRubric, setUpdatedRubric] = useState('');
+
+  // Evaluating submission ID tracker
+  const [evaluatingSubId, setEvaluatingSubId] = useState<string | null>(null);
+  const [evaluationFeedback, setEvaluationFeedback] = useState<string | null>(null);
 
   const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x75B4aBC58426FB6D817Ed02b3b243a9A8Bb2c0E0";
 
-  useEffect(() => {
-    const rc = createClient({
-      chain: studionet,
-    });
-    setReadClient(rc);
-  }, []);
-
-  const updateBalance = async (address: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (typeof window !== 'undefined' && (window as any).ethereum) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const provider = (window as any).ethereum;
-        const balHex = await provider.request({ method: 'eth_getBalance', params: [address, 'latest'] });
-        const bal = (parseInt(balHex, 16) / 1e18).toFixed(4);
-        setBalance(bal);
-      } catch (e) {
-        console.error("Failed to fetch balance", e);
-      }
-    }
-  };
-
-  const fetchData = useCallback(async () => {
-    if (!readClient || !contractAddress) return;
+  // Wallet Connection
+  const connectWallet = async () => {
     try {
-      // Fetch Projects
-      try {
-        const allProjsStr = await readClient.readContract({
-           address: contractAddress,
-           functionName: 'get_all_projects',
-           args: []
-        });
-        const allProjs = JSON.parse(allProjsStr as string);
-        const fetchedProjects = allProjs.map((proj: any) => ({
-          id: parseInt(proj.id), 
-          targetUrl: proj.target_url || proj.targetUrl, 
-          sponsor: proj.sponsor,
-          poolBalance: (parseInt(proj.pool_balance || "0") / 1e18).toFixed(2),
-          status: proj.status || "ACTIVE"
-        }));
-        setProjects(fetchedProjects.reverse());
-      } catch (e) {
-        console.error("Failed to fetch all projects", e);
-      }
-
-      try {
-        const allAudsStr = await readClient.readContract({
-           address: contractAddress,
-           functionName: 'get_all_audits',
-           args: []
-        });
-        const allAudits = JSON.parse(allAudsStr as string);
-        const fetchedAudits = allAudits.map((audit: any) => ({
-          id: parseInt(audit.id), 
-          projectId: parseInt(audit.project_id || audit.projectId || "0"),
-          targetUrl: audit.target_url || audit.targetUrl, 
-          status: audit.status, 
-          payoutStatus: audit.payout_status || audit.payoutStatus || audit.payout_status, 
-          analysis: audit.analysis,
-          report: audit.report,
-          startLine: audit.start_line,
-          endLine: audit.end_line,
-          severity: audit.severity || "NONE"
-        }));
-        setAudits(fetchedAudits.reverse());
-      } catch (e) {
-        console.error("Failed to fetch all audits", e);
-      }
-
-      try {
-        const lbStr = await readClient.readContract({
-           address: contractAddress,
-           functionName: 'get_leaderboard',
-           args: []
-        });
-        const lb = JSON.parse(lbStr as string);
-        setLeaderboard(lb);
-      } catch (e) {
-        console.error("Failed to fetch leaderboard", e);
-      }
-      
-      // Update balance automatically to reflect payouts
-      if (account) {
-        updateBalance(account);
+      if (typeof window !== 'undefined' && (window as any).ethereum) {
+        const accounts = await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts && accounts[0]) {
+          setAccount(accounts[0]);
+        }
+      } else {
+        alert('MetaMask or a Web3 compatible wallet is required.');
       }
     } catch (err) {
-      console.error("Failed to fetch data", err);
+      console.error('Connection error:', err);
     }
-  }, [readClient, contractAddress, account]);
+  };
+
+  // Check initial connection
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).ethereum) {
+      (window as any).ethereum.request({ method: 'eth_accounts' }).then((accounts: string[]) => {
+        if (accounts && accounts[0]) {
+          setAccount(accounts[0]);
+        }
+      });
+
+      (window as any).ethereum.on('accountsChanged', (accounts: string[]) => {
+        setAccount(accounts[0] || null);
+      });
+    }
+  }, []);
+
+  // Fetch User DB Profile
+  const loadUserProfile = useCallback(async (addr: string) => {
+    try {
+      const res = await fetch(`/api/users/${addr}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.found && data.user) {
+          setUserProfile(data.user);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading user profile:', err);
+    }
+  }, []);
 
   useEffect(() => {
-    if (readClient && contractAddress) {
-      fetchData();
-      // Polling every 60 seconds instead of 15s to prevent GenLayer RPC rate limiting
-      const interval = setInterval(() => fetchData(), 60000);
-      return () => clearInterval(interval);
-    }
-  }, [readClient, contractAddress, fetchData]);
-
-  const connectWallet = async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (typeof window !== 'undefined' && (window as any).ethereum) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const provider = (window as any).ethereum;
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const address = accounts[0];
-        setAccount(address);
-        updateBalance(address);
-        
-        const wc = createClient({
-          chain: studionet,
-          account: address,
-          provider: provider,
-        });
-        setWriteClient(wc);
-      } catch (err) {
-        console.error("Failed to connect wallet", err);
-      }
+    if (account) {
+      loadUserProfile(account);
     } else {
-      alert("Please install a Web3 wallet like MetaMask.");
+      setUserProfile(null);
     }
+  }, [account, loadUserProfile]);
+
+  // Read Contract Data
+  const loadMarketplaceData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const readClient = createClient({
+        chain: studionet,
+      });
+
+      // 1. Fetch All Jobs
+      try {
+        const jobsStr = await (readClient as any).readContract({
+          address: contractAddress,
+          functionName: 'get_all_jobs',
+          args: [],
+        });
+        if (jobsStr) {
+          setJobs(JSON.parse(jobsStr));
+        }
+      } catch (e) {
+        console.warn('get_all_jobs fallback:', e);
+      }
+
+      // 2. Fetch All Submissions
+      try {
+        const subsStr = await (readClient as any).readContract({
+          address: contractAddress,
+          functionName: 'get_all_submissions',
+          args: [],
+        });
+        if (subsStr) {
+          setSubmissions(JSON.parse(subsStr));
+        }
+      } catch (e) {
+        console.warn('get_all_submissions fallback:', e);
+      }
+
+      // 3. Fetch Leaderboard
+      try {
+        const lbStr = await (readClient as any).readContract({
+          address: contractAddress,
+          functionName: 'get_worker_leaderboard',
+          args: [],
+        });
+        if (lbStr) {
+          setLeaderboard(JSON.parse(lbStr));
+        }
+      } catch (e) {
+        console.warn('get_worker_leaderboard fallback:', e);
+      }
+
+      // 4. Protocol Stats
+      try {
+        const statsStr = await (readClient as any).readContract({
+          address: contractAddress,
+          functionName: 'get_protocol_stats',
+          args: [],
+        });
+        if (statsStr) {
+          setProtocolStats(JSON.parse(statsStr));
+        }
+      } catch (e) {
+        console.warn('get_protocol_stats fallback:', e);
+      }
+
+    } catch (err) {
+      console.error('Error fetching marketplace data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [contractAddress]);
+
+  useEffect(() => {
+    loadMarketplaceData();
+  }, [loadMarketplaceData]);
+
+  const getWriteClient = () => {
+    return (createClient as any)({
+      chain: studionet,
+      provider: typeof window !== 'undefined' ? (window as any).ethereum : undefined,
+    });
   };
 
-  const disconnectWallet = () => {
-    setAccount(null);
-    setBalance(null);
-    setWriteClient(null);
-  };
-
-  const handleRegisterProject = async (e: React.FormEvent) => {
+  // Client: Post a Job
+  const handlePostJob = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!account || !writeClient) {
-      alert("Please connect your wallet first.");
-      return;
-    }
-    
-    setIsRegistering(true);
+    if (!account) return alert('Connect wallet first');
+    if (!jobTitle.trim() || !jobRubric.trim()) return alert('Title and rubric are required');
+
     try {
-      const fundWei = BigInt(parseFloat(fundAmount) * 1e18);
-      
-      // Fetch and hash content to bind to immutable artifact
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Failed to fetch source code from URL");
-      const source = await response.text();
-      const encoder = new TextEncoder();
-      const data = encoder.encode(source);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const contentHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      setActionLoading(true);
+      const writeClient = getWriteClient();
 
-      await writeClient.writeContract({
+      const escrowWei = parseEther(jobEscrowGen);
+      const minStakeWei = parseEther(jobMinStakeGen);
+
+      const tx = await (writeClient as any).writeContract({
         address: contractAddress,
-        functionName: 'register_project',
-        args: [url, contentHash],
-        value: fundWei,
+        functionName: 'post_job',
+        args: [jobTitle.trim(), jobDescription.trim(), jobRubric.trim(), minStakeWei],
+        value: escrowWei,
+        account: account as any,
       });
-      setUrl('');
-      setTimeout(() => {
-        fetchData();
-        updateBalance(account);
-      }, 2000);
-    } catch (error: any) {
-      console.error(error);
-      alert(`Error registering project:\n\n${error?.message || JSON.stringify(error) || String(error)}`);
-    } finally {
-      setIsRegistering(false);
-    }
-  };
 
-  const openAuditModal = (projectId: number) => {
-    if (!account || !writeClient) {
-      alert("Please connect your wallet first.");
-      return;
-    }
-    setSelectedAuditProjectId(projectId);
-    setAuditReport("");
-    setAuditStartLine("");
-    setAuditEndLine("");
-    setShowAuditModal(true);
-  };
-
-  const submitAuditModal = async () => {
-    if (selectedAuditProjectId === null || !writeClient) return;
-
-    if (!auditReport || auditReport.trim() === "") {
-        alert("A vulnerability report is required.");
-        return;
-    }
-
-    const startLine = parseInt(auditStartLine);
-    const endLine = parseInt(auditEndLine);
-
-    if (isNaN(startLine) || isNaN(endLine) || startLine < 1 || endLine < startLine) {
-        alert("Invalid line numbers. Start line must be >= 1 and End line must be >= Start line.");
-        return;
-    }
-
-    if (endLine - startLine > 100) {
-        alert("Maximum bounded slice is 100 lines. Please narrow your report window.");
-        return;
-    }
-
-    setIsAuditingId(selectedAuditProjectId);
-    setShowAuditModal(false);
-    
-    try {
-      const fullReport = `[CLAIMED SEVERITY: ${claimedSeverity}]\n${auditReport.trim()}`;
-      await writeClient.writeContract({
-        address: contractAddress,
-        functionName: 'submit_audit',
-        args: [selectedAuditProjectId, fullReport, startLine, endLine],
-        value: BigInt("100000000000000000"), // 0.1 GEN stake
-      });
-      alert("Audit request submitted successfully! Find it in the active audits list to execute.");
-      setTimeout(() => {
-        fetchData();
-        if (account) updateBalance(account);
-      }, 2000);
-    } catch (error: any) {
-      console.error(error);
-      alert(`Error submitting audit:\n\n${error?.message || JSON.stringify(error) || String(error)}`);
-    } finally {
-      setIsAuditingId(null);
-      setSelectedAuditProjectId(null);
-    }
-  };
-
-  const handleTopUpPool = async () => {
-    if (!account || !writeClient || topUpProjectId === null) {
-      alert("Please connect your wallet first.");
-      return;
-    }
-    const amountFloat = parseFloat(topUpAmount);
-    if (isNaN(amountFloat) || amountFloat <= 0) {
-      alert("Please enter a valid GEN amount.");
-      return;
-    }
-    setIsToppingUp(true);
-    try {
-      const valWei = BigInt(Math.floor(amountFloat * 1e18));
-      await writeClient.writeContract({
-        address: contractAddress,
-        functionName: 'top_up_pool',
-        args: [topUpProjectId],
-        value: valWei,
-      });
-      alert(`Successfully added ${topUpAmount} GEN to Project #${topUpProjectId} bounty pool!`);
-      setTopUpProjectId(null);
-      setTimeout(() => {
-        fetchData();
-        if (account) updateBalance(account);
-      }, 2000);
+      alert(`Job posted successfully! TX: ${tx}`);
+      setShowPostJobModal(false);
+      setJobTitle('');
+      setJobDescription('');
+      setJobRubric('');
+      await loadMarketplaceData();
     } catch (err: any) {
-      console.error(err);
-      alert(`Error topping up pool:\n\n${err?.message || String(err)}`);
+      console.error('Post job error:', err);
+      alert(`Error posting job: ${err.message || err}`);
     } finally {
-      setIsToppingUp(false);
+      setActionLoading(false);
     }
   };
 
-  const handleExecute = async (id: number) => {
-    if (!writeClient || !contractAddress) {
-        alert("Please connect wallet first");
-        return;
-    }
+  // Freelancer: Submit Deliverable & Stake Collateral
+  const handleSubmitDeliverable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!account) return alert('Connect wallet first');
+    if (!selectedJobForSubmit) return;
+    if (!deliverableUrl.trim()) return alert('Deliverable URL is required');
+
     try {
-      await writeClient.writeContract({
+      setActionLoading(true);
+      const writeClient = getWriteClient();
+
+      const stakeWei = parseEther(stakeAmountGen);
+
+      const tx = await (writeClient as any).writeContract({
         address: contractAddress,
-        functionName: 'execute_audit',
-        args: [id],
-        value: BigInt(0),
+        functionName: 'submit_deliverable',
+        args: [BigInt(selectedJobForSubmit.id), deliverableUrl.trim(), deliverableNotes.trim()],
+        value: stakeWei,
+        account: account as any,
       });
-      alert("AI Evaluation triggered! Waiting for consensus...");
-    } catch (error: any) {
-      console.error(error);
-      alert(`Error triggering AI evaluation:\n\n${error?.message || JSON.stringify(error) || String(error)}`);
+
+      alert(`Deliverable submitted and collateral staked! TX: ${tx}`);
+      setShowSubmitModal(false);
+      setDeliverableUrl('');
+      setDeliverableNotes('');
+      await loadMarketplaceData();
+    } catch (err: any) {
+      console.error('Submit deliverable error:', err);
+      alert(`Error submitting deliverable: ${err.message || err}`);
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const [activeTab, setActiveTab] = useState('overview');
+  // Evaluate Submission (GenVM AI Consensus)
+  const handleEvaluate = async (submissionId: string) => {
+    if (!account) return alert('Connect wallet first');
+
+    try {
+      setEvaluatingSubId(submissionId);
+      setEvaluationFeedback("GenVM AI validators are fetching your deliverable and evaluating acceptance rubric criteria...");
+
+      const writeClient = getWriteClient();
+
+      const tx = await (writeClient as any).writeContract({
+        address: contractAddress,
+        functionName: 'evaluate_submission',
+        args: [BigInt(submissionId)],
+        account: account as any,
+      });
+
+      setEvaluationFeedback(`Evaluation complete on GenVM! Transaction: ${tx}`);
+      await loadMarketplaceData();
+    } catch (err: any) {
+      console.error('Evaluation error:', err);
+      setEvaluationFeedback(`Evaluation error: ${err.message || err}`);
+    } finally {
+      setEvaluatingSubId(null);
+    }
+  };
+
+  // Option B: Client Relist Gig
+  const handleRelistJob = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!account || !selectedJobForRelist) return;
+
+    try {
+      setActionLoading(true);
+      const writeClient = getWriteClient();
+
+      const tx = await (writeClient as any).writeContract({
+        address: contractAddress,
+        functionName: 'relist_job',
+        args: [BigInt(selectedJobForRelist.id), updatedRubric.trim()],
+        account: account as any,
+      });
+
+      alert(`Gig re-listed successfully! New freelancers can now attempt it. TX: ${tx}`);
+      setShowRelistModal(false);
+      await loadMarketplaceData();
+    } catch (err: any) {
+      console.error('Relist error:', err);
+      alert(`Error re-listing gig: ${err.message || err}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Option B: Client Escrow Refund Withdrawal
+  const handleWithdrawEscrow = async (jobId: string) => {
+    if (!account) return alert('Connect wallet first');
+    if (!confirm('Are you sure you want to withdraw remaining escrow? This permanently closes the gig.')) return;
+
+    try {
+      setActionLoading(true);
+      const writeClient = getWriteClient();
+
+      const tx = await (writeClient as any).writeContract({
+        address: contractAddress,
+        functionName: 'withdraw_escrow',
+        args: [BigInt(jobId)],
+        account: account as any,
+      });
+
+      alert(`Full remaining escrow refunded to your wallet! TX: ${tx}`);
+      await loadMarketplaceData();
+    } catch (err: any) {
+      console.error('Withdraw escrow error:', err);
+      alert(`Error withdrawing escrow: ${err.message || err}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Filter jobs by search
+  const filteredJobs = jobs.filter((j) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      j.title.toLowerCase().includes(q) ||
+      j.description.toLowerCase().includes(q) ||
+      j.rubric.toLowerCase().includes(q)
+    );
+  });
+
+  // User-specific jobs and submissions
+  const myClientJobs = jobs.filter(
+    (j) => account && j.client.toLowerCase() === account.toLowerCase()
+  );
+  const myWorkerSubmissions = submissions.filter(
+    (s) => account && s.worker.toLowerCase() === account.toLowerCase()
+  );
+
+  // Current worker's profile stats
+  const currentWorkerStats = leaderboard.find(
+    (w) => account && w.address.toLowerCase() === account.toLowerCase()
+  );
 
   return (
-    <div className="dashboard-layout">
-      {/* Top Navigation Bar */}
-      <header className="topbar">
-        <div className="brand" style={{ fontSize: '0.9rem' }}>
-          <div className="brand-icon" style={{ width: '16px', height: '16px' }}></div>
-          SENTINELPY <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '400' }}>// BUG BOUNTY MARKETPLACE</span>
-        </div>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+      <Navbar
+        account={account}
+        onConnectWallet={connectWallet}
+        onOpenProfile={() => setShowProfileModal(true)}
+        userProfile={userProfile}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
+
+      {/* Main Container */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        <div className="nav-links">
-          <div className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</div>
-          <div className={`nav-item ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => setActiveTab('leaderboard')}>Leaderboard</div>
-          <div className={`nav-item ${activeTab === 'threats' ? 'active' : ''}`} onClick={() => setActiveTab('threats')}>Threat Intelligence</div>
-          <div className={`nav-item ${activeTab === 'contracts' ? 'active' : ''}`} onClick={() => setActiveTab('contracts')}>Verified Projects</div>
-          <div className={`nav-item ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>Audit Logs</div>
-        </div>
-        
-        <div>
-          {account ? (
-            <div className="wallet-box">
-              <div className="wallet-balance">
-                <span className="status-dot active"></span>
-                {balance} GEN
-              </div>
-              <div className="wallet-address font-mono">
-                {`${account.slice(0, 6)}...${account.slice(-4)}`}
-              </div>
-              <button 
-                className="cyber-button secondary" 
-                style={{ padding: '0.2rem 0.4rem', width: 'auto', fontSize: '0.65rem' }}
-                onClick={disconnectWallet}
-              >
-                DISCONNECT
-              </button>
-            </div>
-          ) : (
-            <button className="cyber-button" style={{ width: 'auto' }} onClick={connectWallet}>
-              CONNECT WALLET
-            </button>
-          )}
-        </div>
-      </header>
+        {/* Hero Section */}
+        <div className="mb-10 text-center md:text-left relative overflow-hidden rounded-3xl bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800/80 p-8 md:p-12 shadow-2xl">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-0 right-1/4 -mb-20 w-80 h-80 rounded-full bg-blue-600/10 blur-3xl pointer-events-none"></div>
 
-      {/* Main Dashboard Content */}
-      <main className="main-content">
-        {activeTab === 'overview' && (
-          <>
-            {/* Top KPI Cards */}
-            <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div className="cyber-panel" style={{ padding: '1rem' }}>
-                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>SPONSORED PROJECTS</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{projects.length}</div>
-              </div>
-              <div className="cyber-panel purple-accent" style={{ padding: '1rem' }}>
-                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>THREATS DETECTED</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{audits.filter(a => a.status?.toUpperCase() === 'MALICIOUS').length} <span className="text-danger" style={{ fontSize: '0.8rem', marginLeft: '0.5rem' }}>Critical</span></div>
-              </div>
-              <div className="cyber-panel" style={{ padding: '1rem' }}>
-                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>NETWORK CONSENSUS</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>Active <span className="text-success" style={{ fontSize: '0.8rem', marginLeft: '0.5rem' }}>GenVM</span></div>
-              </div>
-              <div className="cyber-panel" style={{ padding: '1rem' }}>
-                <div className="panel-title" style={{ marginBottom: '0.5rem' }}>TOTAL BOUNTY POOL</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>
-                  {projects.reduce((acc, p) => acc + parseFloat(p.poolBalance), 0).toFixed(2)} <span className="text-muted" style={{ fontSize: '0.8rem' }}>GEN</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="dashboard-grid">
-              
-              {/* Left Column: Submission Form */}
-              <section>
-                <div className="cyber-panel purple-accent">
-                  <div className="panel-header">
-                    <div className="panel-title text-purple">SPONSOR A PROJECT</div>
-                  </div>
-                  <div className="panel-body">
-                    <form onSubmit={handleRegisterProject}>
-                      <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        TARGET URL IDENTIFIER (GITHUB RAW / IPFS)
-                      </label>
-                      <input 
-                        type="url" 
-                        className="cyber-input" 
-                        placeholder="https://raw.githubusercontent.com/..."
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        required 
-                      />
-                      
-                      <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        INITIAL BOUNTY POOL (GEN)
-                      </label>
-                      <input 
-                        type="number" 
-                        step="0.1"
-                        min="0.1"
-                        className="cyber-input" 
-                        value={fundAmount}
-                        onChange={(e) => setFundAmount(e.target.value)}
-                        required 
-                      />
-                      
-                      <button 
-                        type="submit" 
-                        className="cyber-button" 
-                        disabled={isRegistering || !account}
-                        style={{ opacity: !account ? 0.5 : 1, cursor: !account ? 'not-allowed' : 'pointer' }}
-                      >
-                        {!account 
-                          ? 'CONNECT WALLET TO SPONSOR' 
-                          : (isRegistering ? 'REGISTERING...' : `REGISTER & DEPOSIT ${fundAmount} GEN`)
-                        }
-                      </button>
-                      <div style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                        Funds are locked in escrow for successful bug hunters.
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              </section>
-
-              {/* Right Column: Feed / Contracts list */}
-              <section>
-                <div className="cyber-panel">
-                  <div className="panel-header">
-                    <div className="panel-title text-cyan">ACTIVE BUG BOUNTIES</div>
-                    <div className="text-cyan font-mono" style={{ fontSize: '0.75rem' }}>{projects.length} Projects Indexed</div>
-                  </div>
-                  <div className="panel-body" style={{ padding: 0 }}>
-                    {projects.length === 0 ? (
-                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                        No sponsored projects available for audit.
-                      </div>
-                    ) : (
-                      <div className="table-responsive">
-                        <table className="data-table">
-                          <thead>
-                            <tr>
-                              <th style={{ padding: '0.75rem 1rem' }}>Project Target & Status</th>
-                              <th style={{ padding: '0.75rem 1rem' }}>Sponsor</th>
-                              <th style={{ padding: '0.75rem 1rem' }}>Pool & Tiered Bounties</th>
-                              <th style={{ padding: '0.75rem 1rem' }}>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {projects.map((proj, i) => (
-                              <tr key={proj.id} className="proposal-main-row" style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                                <td className="table-cell">
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                      <span className="text-muted">❖</span>
-                                      <span style={{ wordBreak: 'break-all', maxWidth: '100%', display: 'inline-block' }} className="font-mono">{proj.targetUrl}</span>
-                                    </div>
-                                    <div>
-                                      <span style={{ 
-                                        fontSize: '0.65rem', 
-                                        padding: '0.15rem 0.4rem', 
-                                        borderRadius: '3px',
-                                        textTransform: 'uppercase',
-                                        fontWeight: 600,
-                                        background: proj.status === 'ACTIVE' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                        color: proj.status === 'ACTIVE' ? 'var(--success)' : 'var(--danger)',
-                                        border: `1px solid ${proj.status === 'ACTIVE' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`
-                                      }}>
-                                        {proj.status}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="table-cell font-mono text-muted" style={{ fontSize: '0.7rem' }}>
-                                  {proj.sponsor.slice(0,6)}...{proj.sponsor.slice(-4)}
-                                </td>
-                                <td className="table-cell">
-                                  <div>
-                                    <span style={{ color: 'var(--success)', fontWeight: 600 }}>{proj.poolBalance} GEN</span>
-                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                                      Crit: 2.0 | High: 1.0 | Med: 0.4 | Low: 0.1
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="table-cell">
-                                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                    {proj.status === 'ACTIVE' && (
-                                      <>
-                                        <button 
-                                          className="cyber-button" 
-                                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', width: 'auto' }}
-                                          onClick={() => openAuditModal(proj.id)}
-                                          disabled={isAuditingId === proj.id || !account}
-                                        >
-                                          {isAuditingId === proj.id ? '...' : 'Hunt Bugs'}
-                                        </button>
-                                        <button 
-                                          className="cyber-button secondary" 
-                                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', width: 'auto' }}
-                                          onClick={() => {
-                                            setTopUpProjectId(proj.id);
-                                            setTopUpAmount('2.0');
-                                          }}
-                                          disabled={!account}
-                                          title="Top Up Bounty Pool"
-                                        >
-                                          + Top Up
-                                        </button>
-                                      </>
-                                    )}
-                                    {proj.status !== 'ACTIVE' && (
-                                      <span className="text-muted" style={{ fontSize: '0.7rem' }}>Program Closed</span>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </section>
+          <div className="relative z-10 max-w-3xl">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-semibold mb-4">
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Decentralized Escrow Guaranteed by GenVM AI</span>
             </div>
             
-            {/* Active Audits Section */}
-            <div className="cyber-panel" style={{ marginTop: '1.5rem' }}>
-                  <div className="panel-header">
-                    <div className="panel-title text-muted">PENDING & COMPLETED AUDITS</div>
-                    <div className="text-muted font-mono" style={{ fontSize: '0.75rem' }}>{audits.length} Audits Indexed</div>
-                  </div>
-                  <div className="panel-body" style={{ padding: 0 }}>
-                    {audits.length === 0 ? (
-                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                        No audits have been submitted yet.
-                      </div>
-                    ) : (
-                      <div className="table-responsive">
-                        <table className="data-table">
-                          <thead>
-                            <tr>
-                              <th style={{ padding: '0.75rem 1rem' }}>Contract Target</th>
-                              <th style={{ padding: '0.75rem 1rem' }}>Risk Level</th>
-                              <th style={{ padding: '0.75rem 1rem' }}>Escrow Status</th>
-                              <th style={{ padding: '0.75rem 1rem' }}>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {audits.map((audit, i) => (
-                              <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-          </>
-        )}
-        
-        {activeTab === 'leaderboard' && (
-          <div className="cyber-panel" style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <div className="panel-header">
-              <div className="panel-title text-cyan">WHITE-HAT RESEARCHER LEADERBOARD</div>
-              <div className="text-cyan font-mono" style={{ fontSize: '0.75rem' }}>{leaderboard.length} Verified Researchers</div>
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-4 leading-tight">
+              Work with confidence. <br className="hidden md:inline" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">
+                Guaranteed by Consensus.
+              </span>
+            </h1>
+            
+            <p className="text-sm md:text-base text-zinc-400 mb-8 leading-relaxed max-w-2xl">
+              Clients lock milestone escrows with objective acceptance rubrics. Freelancers stake collateral to guarantee high-quality execution. GenLayer AI validators evaluate the deliverable objectively—with zero human moderator bias.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => {
+                  if (!account) connectWallet();
+                  else setShowPostJobModal(true);
+                }}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm transition shadow-lg shadow-cyan-500/25 flex items-center space-x-2"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Post a Gig (Client Escrow)</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('gigs')}
+                className="px-6 py-3 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-sm font-semibold transition"
+              >
+                Browse Available Gigs
+              </button>
             </div>
-            <div className="panel-body" style={{ padding: 0 }}>
-              <div className="table-responsive">
-                <table className="data-table">
-                  <thead>
+          </div>
+
+          {/* Protocol Quick Stats Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10 pt-8 border-t border-zinc-800/80">
+            <div>
+              <span className="text-[11px] uppercase tracking-wider font-semibold text-zinc-500">Live Escrow Gigs</span>
+              <p className="text-xl font-extrabold text-white">{jobs.length}</p>
+            </div>
+            <div>
+              <span className="text-[11px] uppercase tracking-wider font-semibold text-zinc-500">Completed Jobs</span>
+              <p className="text-xl font-extrabold text-emerald-400">{protocolStats.total_jobs_completed || 0}</p>
+            </div>
+            <div>
+              <span className="text-[11px] uppercase tracking-wider font-semibold text-zinc-500">Protocol Take-Rate</span>
+              <p className="text-xl font-extrabold text-cyan-400">2.5%</p>
+            </div>
+            <div>
+              <span className="text-[11px] uppercase tracking-wider font-semibold text-zinc-500">AI Dispute Resolution</span>
+              <p className="text-xl font-extrabold text-purple-400">GenVM</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Global Feedback Alert */}
+        {evaluationFeedback && (
+          <div className="mb-6 p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/40 text-cyan-200 text-xs font-mono flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>{evaluationFeedback}</span>
+            </div>
+            <button
+              onClick={() => setEvaluationFeedback(null)}
+              className="text-zinc-400 hover:text-white"
+            >
+              &times;
+            </button>
+          </div>
+        )}
+
+        {/* ================= TAB 1: EXPLORE GIGS ================= */}
+        {activeTab === 'gigs' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-white">Marketplace Gigs</h2>
+                <p className="text-xs text-zinc-400">Stake collateral and deliver quality work to claim the escrow.</p>
+              </div>
+
+              {/* Search */}
+              <div className="relative w-full sm:w-72">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-zinc-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by keyword, rubric..."
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+            </div>
+
+            {/* Gigs Feed */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredJobs.map((job) => {
+                const escrowGen = Number(job.escrow_balance || '0') / 10**18;
+                const minStakeGen = Number(job.min_stake_wei || '0') / 10**18;
+                const isOpen = job.status === 'OPEN';
+
+                return (
+                  <div
+                    key={job.id}
+                    className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition flex flex-col justify-between space-y-4 shadow-lg group"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="text-lg font-bold text-white group-hover:text-cyan-300 transition">
+                          {job.title}
+                        </h3>
+                        <span
+                          className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider shrink-0 ${
+                            job.status === 'OPEN'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                              : job.status === 'IN_REVIEW'
+                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                              : job.status === 'AWAITING_CLIENT_ACTION'
+                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                              : 'bg-zinc-800 text-zinc-400'
+                          }`}
+                        >
+                          {job.status}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-zinc-400 line-clamp-2 mb-4">
+                        {job.description || 'No description provided.'}
+                      </p>
+
+                      {/* Rubric Snippet */}
+                      <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/80 mb-4">
+                        <span className="text-[10px] uppercase font-bold text-zinc-500 block mb-1">
+                          Objective AI Rubric
+                        </span>
+                        <p className="text-xs text-zinc-300 font-mono line-clamp-3">
+                          {job.rubric}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-xs py-2 border-t border-zinc-800 text-zinc-400 mb-4">
+                        <div>
+                          <span className="block text-[10px] uppercase text-zinc-500 font-semibold">Bounty Pool</span>
+                          <span className="text-base font-extrabold text-cyan-400">{escrowGen.toFixed(2)} GEN</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="block text-[10px] uppercase text-zinc-500 font-semibold">Required Stake</span>
+                          <span className="text-xs font-bold text-amber-400">{minStakeGen.toFixed(2)} GEN</span>
+                        </div>
+                      </div>
+
+                      {isOpen ? (
+                        <button
+                          onClick={() => {
+                            if (!account) connectWallet();
+                            else {
+                              setSelectedJobForSubmit(job);
+                              setStakeAmountGen(minStakeGen.toString());
+                              setShowSubmitModal(true);
+                            }
+                          }}
+                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs transition shadow-md shadow-cyan-500/20"
+                        >
+                          Stake & Submit Deliverable
+                        </button>
+                      ) : (
+                        <div className="text-center text-xs text-zinc-500 py-2 bg-zinc-950 rounded-xl border border-zinc-800/50">
+                          {job.status === 'COMPLETED' ? 'Completed & Paid' : 'Currently in review'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {filteredJobs.length === 0 && (
+                <div className="md:col-span-2 p-16 text-center text-zinc-500 bg-zinc-900/50 rounded-2xl border border-zinc-800">
+                  <Briefcase className="w-10 h-10 mx-auto text-zinc-600 mb-3" />
+                  <p className="text-sm font-semibold text-zinc-300">No active gigs found</p>
+                  <p className="text-xs text-zinc-500 mt-1">Be the first to post a gig and fund an escrow!</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 2: MY ESCROWS & SUBMISSIONS ================= */}
+        {activeTab === 'my-gigs' && (
+          <div className="space-y-10">
+            
+            {/* Section A: My Client Escrows */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-white">My Funded Client Escrows</h3>
+                  <p className="text-xs text-zinc-400">Gigs you have created and funded with escrow.</p>
+                </div>
+                <button
+                  onClick={() => setShowPostJobModal(true)}
+                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition"
+                >
+                  + New Gig
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                {myClientJobs.map((job) => {
+                  const escrowGen = Number(job.escrow_balance || '0') / 10**18;
+                  const isAwaitingAction = job.status === 'AWAITING_CLIENT_ACTION';
+
+                  return (
+                    <div key={job.id} className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono text-xs text-zinc-500">#{job.id}</span>
+                          <h4 className="text-base font-bold text-white">{job.title}</h4>
+                        </div>
+                        <span className="text-xs px-2.5 py-1 rounded-full font-bold uppercase bg-zinc-800 text-zinc-300">
+                          {job.status}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between text-xs text-zinc-400 gap-4">
+                        <div>
+                          <span>Current Escrow Balance: </span>
+                          <span className="font-bold text-cyan-400">{escrowGen.toFixed(2)} GEN</span>
+                        </div>
+                        <div>
+                          <span>Pending Reviews: </span>
+                          <span className="font-bold text-white">{job.pending_submissions || 0}</span>
+                        </div>
+                      </div>
+
+                      {/* OPTION B ACTION CARDS */}
+                      {isAwaitingAction && (
+                        <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-500/40 space-y-3">
+                          <div className="flex items-center space-x-2 text-amber-300 text-xs font-semibold">
+                            <AlertCircle className="w-4 h-4 text-amber-400" />
+                            <span>Freelancer was rejected. Your 100% escrow is preserved in the contract!</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400">
+                            Choose to re-list the gig for another freelancer to attempt with zero extra deposit, or withdraw 100% of your escrow back to your wallet.
+                          </p>
+
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <button
+                              onClick={() => {
+                                setSelectedJobForRelist(job);
+                                setUpdatedRubric(job.rubric);
+                                setShowRelistModal(true);
+                              }}
+                              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition flex items-center space-x-1.5"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>Re-list Gig (No extra deposit)</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleWithdrawEscrow(job.id)}
+                              className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-rose-300 font-bold text-xs transition flex items-center space-x-1.5"
+                            >
+                              <ArrowDownToLine className="w-3.5 h-3.5" />
+                              <span>Withdraw 100% Escrow</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {myClientJobs.length === 0 && (
+                  <div className="p-8 text-center text-zinc-500 bg-zinc-900/40 rounded-xl border border-zinc-800 text-xs">
+                    You haven't posted any gigs yet.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Section B: My Freelancer Submissions */}
+            <div>
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-white">My Deliverable Submissions</h3>
+                <p className="text-xs text-zinc-400">Track your staked deliverables and GenVM AI evaluation verdicts.</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                {myWorkerSubmissions.map((sub) => {
+                  const stakeGen = Number(sub.stake_wei || '0') / 10**18;
+                  const isPending = sub.status === 'Pending';
+                  const isEvaluating = evaluatingSubId === sub.id;
+
+                  return (
+                    <div key={sub.id} className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono text-xs text-zinc-500">Submission #{sub.id} (Job #{sub.job_id})</span>
+                        </div>
+                        <span
+                          className={`text-xs px-2.5 py-1 rounded-full font-bold uppercase ${
+                            sub.status === 'APPROVED'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                              : sub.status === 'REJECTED'
+                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                              : 'bg-zinc-800 text-zinc-400'
+                          }`}
+                        >
+                          {sub.status}
+                        </span>
+                      </div>
+
+                      <div className="text-xs">
+                        <span className="text-zinc-500">Deliverable URL: </span>
+                        <a
+                          href={sub.deliverable_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-cyan-400 hover:underline inline-flex items-center space-x-1"
+                        >
+                          <span>{sub.deliverable_url}</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+
+                      <div className="text-xs text-zinc-400">
+                        <span>Collateral Staked: </span>
+                        <span className="font-bold text-amber-400">{stakeGen.toFixed(2)} GEN</span>
+                      </div>
+
+                      {/* Trace */}
+                      {sub.evaluation_trace && (
+                        <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 font-mono text-[11px] text-zinc-300 whitespace-pre-line">
+                          {sub.evaluation_trace}
+                        </div>
+                      )}
+
+                      {/* Trigger Evaluation Button if Pending */}
+                      {isPending && (
+                        <div className="pt-2">
+                          <button
+                            onClick={() => handleEvaluate(sub.id)}
+                            disabled={isEvaluating}
+                            className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs transition shadow-md shadow-purple-500/20 disabled:opacity-50 flex items-center space-x-2"
+                          >
+                            {isEvaluating ? (
+                              <>
+                                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <span>GenVM Evaluating...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>Trigger GenVM AI Evaluation</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {myWorkerSubmissions.length === 0 && (
+                  <div className="p-8 text-center text-zinc-500 bg-zinc-900/40 rounded-xl border border-zinc-800 text-xs">
+                    You haven't submitted any deliverables yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 3: LEADERBOARD ================= */}
+        {activeTab === 'leaderboard' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold text-white">Freelancer Hall of Fame</h2>
+              <p className="text-xs text-zinc-400">Ranked by on-chain earnings, successful deliverables, and slashing record.</p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-zinc-950 text-zinc-400 uppercase tracking-wider border-b border-zinc-800">
                     <tr>
-                      <th style={{ padding: '0.75rem 1rem' }}>Rank & Researcher</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Reputation Tier</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Total Earned</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Exploits Verified (Crit / High / Med / Low)</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>False Alarms</th>
+                      <th className="p-3">Rank</th>
+                      <th className="p-3">Freelancer Address</th>
+                      <th className="p-3">Total Earned</th>
+                      <th className="p-3">Jobs Completed</th>
+                      <th className="p-3">Slashed Record</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {leaderboard.map((res, i) => {
-                      const earnedGen = (res.total_earned_wei / 1e18).toFixed(2);
-                      const rankTier = parseFloat(earnedGen) >= 2.0 
-                        ? { title: 'Principal Auditor', color: '#ef4444' }
-                        : parseFloat(earnedGen) >= 1.0 
-                        ? { title: 'Senior Hunter', color: '#f97316' }
-                        : parseFloat(earnedGen) >= 0.1 
-                        ? { title: 'Verified Researcher', color: 'var(--primary-cyan)' }
-                        : { title: 'Security Scout', color: 'var(--text-muted)' };
-
+                  <tbody className="divide-y divide-zinc-800">
+                    {leaderboard.map((w, index) => {
+                      const earnedGen = (w.total_earned_wei || 0) / 10**18;
                       return (
-                        <tr key={res.address} className="proposal-main-row" style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                          <td className="table-cell">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                              <span style={{ 
-                                fontWeight: 700, 
-                                color: i === 0 ? '#fbbf24' : i === 1 ? '#e2e8f0' : i === 2 ? '#b45309' : 'var(--text-muted)',
-                                fontSize: '0.85rem' 
-                              }}>
-                                #{i + 1}
-                              </span>
-                              <span className="font-mono" style={{ fontSize: '0.75rem' }}>
-                                {res.address.slice(0, 8)}...{res.address.slice(-6)}
-                              </span>
-                              {account && res.address.toLowerCase() === account.toLowerCase() && (
-                                <span style={{ fontSize: '0.65rem', background: 'rgba(6, 182, 212, 0.2)', color: 'var(--primary-cyan)', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>YOU</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="table-cell">
-                            <span style={{ 
-                              color: rankTier.color, 
-                              border: `1px solid ${rankTier.color}40`, 
-                              padding: '0.2rem 0.4rem', 
-                              borderRadius: '4px',
-                              fontSize: '0.65rem',
-                              fontWeight: 600,
-                              textTransform: 'uppercase'
-                            }}>
-                              {rankTier.title}
-                            </span>
-                          </td>
-                          <td className="table-cell font-mono" style={{ color: 'var(--success)', fontWeight: 600 }}>
-                            {earnedGen} GEN
-                          </td>
-                          <td className="table-cell font-mono" style={{ fontSize: '0.75rem' }}>
-                            <span style={{ color: '#ef4444', marginRight: '0.4rem' }}>{res.critical_count} Crit</span>
-                            <span style={{ color: '#f97316', marginRight: '0.4rem' }}>{res.high_count} High</span>
-                            <span style={{ color: '#eab308', marginRight: '0.4rem' }}>{res.medium_count} Med</span>
-                            <span style={{ color: 'var(--primary-cyan)' }}>{res.low_count} Low</span>
-                          </td>
-                          <td className="table-cell font-mono text-muted" style={{ fontSize: '0.75rem' }}>
-                            {res.slashed_count} slashed
-                          </td>
+                        <tr key={w.address} className="hover:bg-zinc-800/40">
+                          <td className="p-3 font-bold text-zinc-400">#{index + 1}</td>
+                          <td className="p-3 font-mono text-cyan-400 font-semibold">{w.address}</td>
+                          <td className="p-3 font-bold text-emerald-400">{earnedGen.toFixed(2)} GEN</td>
+                          <td className="p-3 font-semibold text-zinc-200">{w.jobs_completed}</td>
+                          <td className="p-3 font-semibold text-zinc-400">{w.slashed_count}</td>
                         </tr>
                       );
                     })}
+
                     {leaderboard.length === 0 && (
-                      <tr><td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No bounty payouts recorded yet. Be the first to claim a bounty!</td></tr>
+                      <tr>
+                        <td colSpan={5} className="p-6 text-center text-zinc-500">
+                          No freelancer records on-chain yet.
+                        </td>
+                      </tr>
                     )}
                   </tbody>
                 </table>
@@ -683,194 +855,236 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === 'threats' && (
-          <div className="cyber-panel purple-accent" style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <div className="panel-header">
-              <div className="panel-title text-purple">THREAT INTELLIGENCE DATABASE</div>
-              <div className="text-purple font-mono" style={{ fontSize: '0.75rem' }}>{audits.filter(a => a.status?.toUpperCase() === 'MALICIOUS').length} Threats Isolated</div>
-            </div>
-            <div className="panel-body" style={{ padding: 0 }}>
-              <div className="table-responsive">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th style={{ padding: '0.75rem 1rem' }}>Malicious Target</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Risk Level</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Escrow Status</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {audits.filter(a => a.status?.toUpperCase() === 'MALICIOUS').map((audit, i) => (
-                      <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
-                    ))}
-                    {audits.filter(a => a.status?.toUpperCase() === 'MALICIOUS').length === 0 && (
-                      <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No threats detected in the registry.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+      </main>
 
-        {activeTab === 'contracts' && (
-          <div className="cyber-panel" style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <div className="panel-header">
-              <div className="panel-title text-cyan">VERIFIED SMART CONTRACTS</div>
-              <div className="text-cyan font-mono" style={{ fontSize: '0.75rem' }}>{audits.filter(a => a.status?.toUpperCase() === 'SECURE').length} Verified Safe</div>
-            </div>
-            <div className="panel-body" style={{ padding: 0 }}>
-              <div className="table-responsive">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th style={{ padding: '0.75rem 1rem' }}>Secure Target</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Risk Level</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Escrow Status</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {audits.filter(a => a.status?.toUpperCase() === 'SECURE').map((audit, i) => (
-                      <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
-                    ))}
-                    {audits.filter(a => a.status?.toUpperCase() === 'SECURE').length === 0 && (
-                      <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No verified contracts in the registry.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* --- MODAL 1: POST A GIG --- */}
+      {showPostJobModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 md:p-8 text-zinc-100 my-8">
+            <h3 className="text-xl font-bold text-white mb-2">Post a New Gig</h3>
+            <p className="text-xs text-zinc-400 mb-6">
+              Deposit funds into escrow with an objective rubric. GenVM AI validators evaluate deliverables directly against this criteria.
+            </p>
 
-        {activeTab === 'logs' && (
-          <div className="cyber-panel" style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <div className="panel-header">
-              <div className="panel-title text-muted">GLOBAL AUDIT LEDGER</div>
-              <div className="text-muted font-mono" style={{ fontSize: '0.75rem' }}>{audits.length} Total Records</div>
-            </div>
-            <div className="panel-body" style={{ padding: 0 }}>
-              <div className="table-responsive">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th style={{ padding: '0.75rem 1rem' }}>Transaction / Target</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>AI Adjudication</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Escrow Resolution</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {audits.map((audit, i) => (
-                      <ProposalCard key={audit.id} audit={audit} index={i} onExecute={() => handleExecute(audit.id)} account={account} />
-                    ))}
-                    {audits.length === 0 && (
-                      <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Ledger is empty.</td></tr>
-                    )}
-                  </tbody>
-                </table>
+            <form onSubmit={handlePostJob} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase text-zinc-400 mb-1">Gig Title</label>
+                <input
+                  type="text"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  placeholder="e.g. Build Responsive Web3 Landing Page"
+                  required
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-cyan-500"
+                />
               </div>
-            </div>
-          </div>
-        )}
-      
-        {/* Audit Submission Modal */}
-        {showAuditModal && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-            <div className="cyber-panel" style={{ width: '100%', maxWidth: '520px', padding: '1.5rem', background: '#0a0a0a', border: '1px solid var(--primary-cyan)', borderRadius: '8px' }}>
-              <div className="panel-title text-cyan" style={{ marginBottom: '1rem' }}>SUBMIT VULNERABILITY REPORT</div>
-              
-              <div style={{ marginBottom: '1rem' }}>
-                <label className="text-muted" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Claimed Severity Tier</label>
-                <select 
-                  className="cyber-input" 
-                  style={{ width: '100%', background: '#111', color: 'var(--text-main)', border: '1px solid rgba(255,255,255,0.15)' }}
-                  value={claimedSeverity}
-                  onChange={(e) => setClaimedSeverity(e.target.value)}
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-zinc-400 mb-1">Description</label>
+                <textarea
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  rows={2}
+                  placeholder="Overview of the task, deliverables, and repo links..."
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-cyan-400 mb-1">
+                  Objective AI Acceptance Rubric (Required)
+                </label>
+                <textarea
+                  value={jobRubric}
+                  onChange={(e) => setJobRubric(e.target.value)}
+                  rows={3}
+                  required
+                  placeholder="1. Must be mobile responsive. 2. Web3 wallet connect works without errors. 3. Code must include unit tests."
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-cyan-500 font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase text-zinc-400 mb-1">
+                    Escrow Deposit (GEN)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0.1"
+                    value={jobEscrowGen}
+                    onChange={(e) => setJobEscrowGen(e.target.value)}
+                    required
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase text-zinc-400 mb-1">
+                    Min Freelancer Stake (GEN)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={jobMinStakeGen}
+                    onChange={(e) => setJobMinStakeGen(e.target.value)}
+                    required
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setShowPostJobModal(false)}
+                  className="px-5 py-2.5 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white"
                 >
-                  <option value="CRITICAL">CRITICAL — Protocol Insolvency / Direct Drain (2.0 GEN)</option>
-                  <option value="HIGH">HIGH — Severe Exploit / Unauthorized State Change (1.0 GEN)</option>
-                  <option value="MEDIUM">MEDIUM — Conditional Logic / DoS / Edge Exploit (0.4 GEN)</option>
-                  <option value="LOW">LOW — Minor Flaw / Informational (0.1 GEN)</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: '1rem' }}>
-                <label className="text-muted" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Specific Vulnerability Report (What is the bug, how does it work, where is it?)</label>
-                <textarea 
-                  className="cyber-input"
-                  style={{ width: '100%', minHeight: '100px', resize: 'vertical' }}
-                  value={auditReport}
-                  onChange={(e) => setAuditReport(e.target.value)}
-                  placeholder="Describe the vulnerability in detail..."
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ flex: 1 }}>
-                  <label className="text-muted" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Start Line</label>
-                  <input 
-                    type="number" 
-                    className="cyber-input" 
-                    style={{ width: '100%' }}
-                    value={auditStartLine}
-                    onChange={(e) => setAuditStartLine(e.target.value)}
-                    placeholder="e.g. 8"
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label className="text-muted" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.5rem' }}>End Line (Max 100 span)</label>
-                  <input 
-                    type="number" 
-                    className="cyber-input" 
-                    style={{ width: '100%' }}
-                    value={auditEndLine}
-                    onChange={(e) => setAuditEndLine(e.target.value)}
-                    placeholder="e.g. 12"
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button className="cyber-button" style={{ background: 'transparent', borderColor: 'var(--text-muted)', color: 'var(--text-muted)' }} onClick={() => setShowAuditModal(false)}>Cancel</button>
-                <button className="cyber-button" onClick={submitAuditModal}>Submit & Stake 0.1 GEN</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Top Up Pool Modal */}
-        {topUpProjectId !== null && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-            <div className="cyber-panel" style={{ width: '100%', maxWidth: '440px', padding: '1.5rem', background: '#0a0a0a', border: '1px solid var(--primary-cyan)', borderRadius: '8px' }}>
-              <div className="panel-title text-cyan" style={{ marginBottom: '1rem' }}>TOP UP BOUNTY POOL (PROJECT #{topUpProjectId})</div>
-              
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label className="text-muted" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Deposit Additional GEN (for active payouts)</label>
-                <input 
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  className="cyber-input" 
-                  style={{ width: '100%' }}
-                  value={topUpAmount}
-                  onChange={(e) => setTopUpAmount(e.target.value)}
-                  placeholder="e.g. 2.0"
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button className="cyber-button" style={{ background: 'transparent', borderColor: 'var(--text-muted)', color: 'var(--text-muted)' }} onClick={() => setTopUpProjectId(null)}>Cancel</button>
-                <button className="cyber-button" disabled={isToppingUp} onClick={handleTopUpPool}>
-                  {isToppingUp ? 'Depositing...' : `Deposit ${topUpAmount} GEN`}
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="px-6 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm transition disabled:opacity-50"
+                >
+                  {actionLoading ? 'Depositing...' : 'Deposit Escrow & Post'}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
-        )}
-      </main>
+        </div>
+      )}
+
+      {/* --- MODAL 2: SUBMIT DELIVERABLE --- */}
+      {showSubmitModal && selectedJobForSubmit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 md:p-8 text-zinc-100 my-8">
+            <h3 className="text-xl font-bold text-white mb-2">Stake & Submit Deliverable</h3>
+            <p className="text-xs text-zinc-400 mb-4">
+              Submitting for: <span className="font-bold text-white">{selectedJobForSubmit.title}</span>
+            </p>
+
+            <form onSubmit={handleSubmitDeliverable} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase text-zinc-400 mb-1">
+                  Deliverable URL (GitHub PR, Live Link, Doc)
+                </label>
+                <input
+                  type="url"
+                  value={deliverableUrl}
+                  onChange={(e) => setDeliverableUrl(e.target.value)}
+                  placeholder="https://github.com/your-org/pull/1"
+                  required
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-cyan-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-zinc-400 mb-1">
+                  Submission Notes
+                </label>
+                <textarea
+                  value={deliverableNotes}
+                  onChange={(e) => setDeliverableNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Summarize what was completed and where reviewers can verify..."
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-amber-400 mb-1">
+                  Collateral Stake (GEN)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min={formatEther(BigInt(selectedJobForSubmit.min_stake_wei))}
+                  value={stakeAmountGen}
+                  onChange={(e) => setStakeAmountGen(e.target.value)}
+                  required
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-cyan-500"
+                />
+                <span className="text-[11px] text-zinc-500 mt-1 block">
+                  Stake is returned in full upon approval. If rejected for underdelivering, stake is slashed to the protocol.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setShowSubmitModal(false)}
+                  className="px-5 py-2.5 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm transition shadow-lg shadow-cyan-500/20 disabled:opacity-50"
+                >
+                  {actionLoading ? 'Staking...' : 'Stake Collateral & Submit'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL 3: RELIST GIG --- */}
+      {showRelistModal && selectedJobForRelist && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 md:p-8 text-zinc-100 my-8">
+            <h3 className="text-xl font-bold text-white mb-2">Re-list Gig (Zero Deposit)</h3>
+            <p className="text-xs text-zinc-400 mb-4">
+              Your deposited escrow is intact in the smart contract. You can clarify the acceptance rubric before re-opening to new freelancers.
+            </p>
+
+            <form onSubmit={handleRelistJob} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase text-zinc-400 mb-1">
+                  Updated Acceptance Rubric
+                </label>
+                <textarea
+                  value={updatedRubric}
+                  onChange={(e) => setUpdatedRubric(e.target.value)}
+                  rows={4}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-100 focus:outline-none focus:border-cyan-500 font-mono"
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setShowRelistModal(false)}
+                  className="px-5 py-2.5 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition disabled:opacity-50"
+                >
+                  {actionLoading ? 'Re-listing...' : 'Confirm Re-list'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- PROFILE MODAL --- */}
+      {account && (
+        <ProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          account={account}
+          onProfileUpdated={(updated) => setUserProfile(updated)}
+          workerStats={currentWorkerStats}
+        />
+      )}
     </div>
   );
 }
