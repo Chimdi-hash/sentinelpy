@@ -26,7 +26,7 @@ import {
 import { createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
 
-const AUTHORIZED_ADMIN = "0x740ad14abb7991d45ba4dec88b59ef12af33dbbb";
+const AUTHORIZED_ADMIN = (process.env.NEXT_PUBLIC_ADMIN_ADDRESS || "").toLowerCase();
 
 export default function AdminPage() {
   const [account, setAccount] = useState<string | null>(null);
@@ -221,8 +221,10 @@ export default function AdminPage() {
           </p>
 
           <div className="p-3.5 rounded-2xl glass-slide text-left">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Authorized Treasury Address</span>
-            <span className="text-xs font-mono text-slate-800 break-all font-semibold">{AUTHORIZED_ADMIN}</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Authorized Protocol Wallet</span>
+            <span className="text-xs font-mono text-slate-800 break-all font-semibold">
+              {AUTHORIZED_ADMIN ? `${AUTHORIZED_ADMIN.slice(0, 6)}••••••••${AUTHORIZED_ADMIN.slice(-4)}` : 'Restricted (Admin Only)'}
+            </span>
           </div>
 
           {account ? (

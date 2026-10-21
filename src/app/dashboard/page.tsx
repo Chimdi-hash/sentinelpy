@@ -63,7 +63,7 @@ export interface WorkerRecord {
   slashed_count: number;
 }
 
-const AUTHORIZED_ADMIN = "0x740ad14abb7991d45ba4dec88b59ef12af33dbbb";
+const AUTHORIZED_ADMIN = (process.env.NEXT_PUBLIC_ADMIN_ADDRESS || "").toLowerCase();
 
 function DashboardContent() {
   const router = useRouter();
@@ -507,7 +507,7 @@ function DashboardContent() {
           {/* Right Section: Stealth Admin + PROFILE BUTTON + Post Gig */}
           <div className="flex items-center space-x-3">
             
-            {/* Stealth Admin Portal Pill (Only for 0x740ad14...) */}
+            {/* Stealth Admin Portal Pill (Only for authorized admin) */}
             {isAdmin && (
               <Link
                 href="/admin"

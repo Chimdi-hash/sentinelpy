@@ -26,9 +26,12 @@ class TrustlessWork(gl.Contract):
     total_slashed_captured_wei: u256
     total_jobs_completed: u256
 
-    def __init__(self, treasury_address: str = "0x740ad14AbB7991d45bA4dEc88B59eF12aF33DbbB"):
+    def __init__(self, treasury_address: str = ""):
         self.owner = Address(str(gl.message.sender_address))
-        self.treasury = Address(treasury_address)
+        if treasury_address and treasury_address != "0x0000000000000000000000000000000000000000":
+            self.treasury = Address(treasury_address)
+        else:
+            self.treasury = Address(str(gl.message.sender_address))
         self.job_counter = u256(0)
         self.submission_counter = u256(0)
         self.worker_counter = u256(0)

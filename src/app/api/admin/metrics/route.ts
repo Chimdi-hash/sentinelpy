@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { countUsers, countFlaggedUsers, getAnalyticsMetrics, listUsers, getRecentVisitorLogs } from '@/lib/db';
 
-const AUTHORIZED_ADMIN = "0x740ad14abb7991d45ba4dec88b59ef12af33dbbb";
+const AUTHORIZED_ADMIN = (process.env.ADMIN_WALLET_ADDRESS || process.env.NEXT_PUBLIC_ADMIN_ADDRESS || "").toLowerCase();
 
 export async function GET(request: NextRequest) {
   try {

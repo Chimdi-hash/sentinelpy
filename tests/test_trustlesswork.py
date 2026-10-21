@@ -63,7 +63,7 @@ tw_module._Recipient = DummyRecipient
 
 class TestTrustlessWork(unittest.TestCase):
     transfers = []
-    TREASURY = "0x740ad14AbB7991d45bA4dEc88B59eF12aF33DbbB"
+    TREASURY = os.getenv("TREASURY_ADDRESS", "0xPROTOCOL_TREASURY_VAULT")
     CLIENT = "0xCLIENT_ALICE"
     WORKER = "0xWORKER_BOB"
     OWNER = "0xDEPLOYER_OWNER"

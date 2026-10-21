@@ -15,7 +15,7 @@ interface NavbarProps {
   setActiveTab?: (tab: 'gigs' | 'my-gigs' | 'leaderboard') => void;
 }
 
-const DEV_TREASURY_ADDRESS = "0x740ad14abb7991d45ba4dec88b59ef12af33dbbb";
+const DEV_TREASURY_ADDRESS = (process.env.NEXT_PUBLIC_ADMIN_ADDRESS || "").toLowerCase();
 
 export default function Navbar({
   account,
