@@ -1,19 +1,18 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/navigation';
-import { ShieldCheck, User, Sparkles, ExternalLink, ShieldAlert } from 'lucide-react';
+import Link from 'next/link';
+import { ShieldCheck, User, ShieldAlert, PlusCircle } from 'lucide-react';
 
 interface NavbarProps {
   account: string | null;
   onConnectWallet: () => void;
-  onOpenProfile: () => void;
   userProfile?: {
     displayName?: string | null;
     avatarUrl?: string | null;
   } | null;
-  activeTab: 'gigs' | 'my-gigs' | 'leaderboard';
-  setActiveTab: (tab: 'gigs' | 'my-gigs' | 'leaderboard') => void;
+  activeTab?: 'gigs' | 'my-gigs' | 'leaderboard';
+  setActiveTab?: (tab: 'gigs' | 'my-gigs' | 'leaderboard') => void;
 }
 
 const DEV_TREASURY_ADDRESS = "0x740ad14abb7991d45ba4dec88b59ef12af33dbbb";
@@ -21,124 +20,116 @@ const DEV_TREASURY_ADDRESS = "0x740ad14abb7991d45ba4dec88b59ef12af33dbbb";
 export default function Navbar({
   account,
   onConnectWallet,
-  onOpenProfile,
   userProfile,
-  activeTab,
+  activeTab = 'gigs',
   setActiveTab,
 }: NavbarProps) {
   const isAdmin = account && account.toLowerCase() === DEV_TREASURY_ADDRESS.toLowerCase();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-white/70 bg-white/75 backdrop-blur-xl shadow-sm shadow-slate-200/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
         {/* Brand / Logo */}
         <div className="flex items-center space-x-6">
-          <a href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-              <ShieldCheck className="w-6 h-6" />
+          <Link href="/" className="flex items-center space-x-3 group">
+            <div className="w-10 h-10 rounded-2xl glass-slide flex items-center justify-center text-slate-800 shadow-md shadow-slate-300/40 border border-white group-hover:scale-105 transition-transform">
+              <ShieldCheck className="w-5 h-5 text-slate-800" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-xl font-black tracking-tight text-white">Trustless<span className="text-cyan-400">Work</span></span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 tracking-wide uppercase">
-                  GenVM AI
+                <span className="text-xl font-extrabold tracking-tight text-slate-900">
+                  Trustless<span className="text-slate-500">Work</span>
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 tracking-wider uppercase">
+                  GenVM
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400">Decentralized Escrow & Deliverable Quality Protocol</p>
+              <p className="text-[11px] text-slate-500 font-medium">Decentralized Escrow Protocol</p>
             </div>
-          </a>
+          </Link>
 
           {/* Navigation Pills */}
-          <nav className="hidden md:flex items-center space-x-1 pl-4 border-l border-zinc-800">
-            <button
-              onClick={() => setActiveTab('gigs')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                activeTab === 'gigs'
-                  ? 'bg-zinc-800 text-white shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-              }`}
-            >
-              Explore Gigs
-            </button>
-            <button
-              onClick={() => setActiveTab('my-gigs')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                activeTab === 'my-gigs'
-                  ? 'bg-zinc-800 text-white shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-              }`}
-            >
-              My Escrows & Submissions
-            </button>
-            <button
-              onClick={() => setActiveTab('leaderboard')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                activeTab === 'leaderboard'
-                  ? 'bg-zinc-800 text-white shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-              }`}
-            >
-              Leaderboard
-            </button>
-          </nav>
+          {setActiveTab && (
+            <nav className="hidden md:flex items-center space-x-1 pl-4 border-l border-slate-200">
+              <button
+                onClick={() => setActiveTab('gigs')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  activeTab === 'gigs'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                Available Gigs
+              </button>
+              <button
+                onClick={() => setActiveTab('my-gigs')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  activeTab === 'my-gigs'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                My Escrows
+              </button>
+              <button
+                onClick={() => setActiveTab('leaderboard')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  activeTab === 'leaderboard'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                Leaderboard
+              </button>
+            </nav>
+          )}
         </div>
 
-        {/* Right Section: Stealth Admin + Profile + Wallet */}
+        {/* Right Section: Stealth Admin + Profile Link + Wallet */}
         <div className="flex items-center space-x-3">
           
-          {/* Stealth Admin Portal Pill (Only visible for Owner/Dev) */}
+          {/* Stealth Admin Portal Pill (Only for Owner/Dev) */}
           {isAdmin && (
-            <a
+            <Link
               href="/admin"
-              className="relative inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-purple-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold hover:border-amber-400 transition shadow-sm shadow-amber-500/20 group"
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-xs font-bold transition shadow-sm"
             >
-              <ShieldAlert className="w-4 h-4 text-amber-400 group-hover:rotate-12 transition-transform" />
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
               <span>Admin Portal</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            </a>
+            </Link>
           )}
 
-          {/* User Profile Badge (if connected) */}
+          {/* User Profile Button */}
           {account ? (
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={onOpenProfile}
-                className="flex items-center space-x-2.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/50 transition group"
-                title="Edit Professional Profile"
-              >
-                <img
-                  src={userProfile?.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${account}`}
-                  alt="Avatar"
-                  className="w-7 h-7 rounded-full object-cover border border-cyan-500/40"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${account}`;
-                  }}
-                />
-                <div className="text-left hidden sm:block">
-                  <p className="text-xs font-semibold text-zinc-200 group-hover:text-cyan-300 transition">
-                    {userProfile?.displayName || `${account.slice(0, 6)}...${account.slice(-4)}`}
-                  </p>
-                  <p className="text-[10px] text-zinc-500 font-mono">
-                    {account.slice(0, 6)}...{account.slice(-4)}
-                  </p>
-                </div>
-              </button>
-
-              <button
-                onClick={onOpenProfile}
-                className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition"
-                title="Edit Profile"
-              >
-                <User className="w-4 h-4" />
-              </button>
-            </div>
+            <Link
+              href="/profile"
+              className="flex items-center space-x-2.5 px-3.5 py-1.5 rounded-2xl glass-card glass-card-hover group border border-white"
+              title="Edit Your Appearance in the Job Market"
+            >
+              <img
+                src={userProfile?.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${account}`}
+                alt="Avatar"
+                className="w-7 h-7 rounded-full object-cover border border-slate-200"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${account}`;
+                }}
+              />
+              <div className="text-left hidden sm:block">
+                <p className="text-xs font-bold text-slate-900 group-hover:text-slate-600 transition">
+                  {userProfile?.displayName || `${account.slice(0, 6)}...${account.slice(-4)}`}
+                </p>
+                <p className="text-[10px] text-slate-500 font-mono">
+                  {account.slice(0, 6)}...{account.slice(-4)}
+                </p>
+              </div>
+            </Link>
           ) : (
             <button
               onClick={onConnectWallet}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-cyan-500/20 active:scale-95"
+              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-md active:scale-95"
             >
-              Connect Wallet
+              Connect EVM Wallet
             </button>
           )}
 
