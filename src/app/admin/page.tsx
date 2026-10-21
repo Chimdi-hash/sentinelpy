@@ -26,10 +26,10 @@ import {
 import { createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
 
-const AUTHORIZED_ADMIN = (process.env.NEXT_PUBLIC_ADMIN_ADDRESS || "").toLowerCase();
-
 export default function AdminPage() {
   const [account, setAccount] = useState<string | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -102,7 +102,20 @@ export default function AdminPage() {
     }
   }, []);
 
-  const isAuthorized = account && account.toLowerCase() === AUTHORIZED_ADMIN.toLowerCase();
+  // Secure Server-side Admin Verification
+  useEffect(() => {
+    if (!account) {
+      setIsAuthorized(false);
+      setCheckingAuth(false);
+      return;
+    }
+    setCheckingAuth(true);
+    fetch(`/api/admin/check?address=${account}`)
+      .then((res) => res.json())
+      .then((data) => setIsAuthorized(Boolean(data.isAdmin)))
+      .catch(() => setIsAuthorized(false))
+      .finally(() => setCheckingAuth(false));
+  }, [account]);
 
   // Fetch Admin Data
   const loadAdminData = useCallback(async () => {
@@ -221,9 +234,9 @@ export default function AdminPage() {
           </p>
 
           <div className="p-3.5 rounded-2xl glass-slide text-left">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Authorized Protocol Wallet</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Access Control</span>
             <span className="text-xs font-mono text-slate-800 break-all font-semibold">
-              {AUTHORIZED_ADMIN ? `${AUTHORIZED_ADMIN.slice(0, 6)}••••••••${AUTHORIZED_ADMIN.slice(-4)}` : 'Restricted (Admin Only)'}
+              {checkingAuth ? 'Verifying credentials...' : 'Restricted (Authorized Owner Only)'}
             </span>
           </div>
 
@@ -305,7 +318,7 @@ export default function AdminPage() {
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-mono">
-                Treasury: {AUTHORIZED_ADMIN.slice(0, 10)}...{AUTHORIZED_ADMIN.slice(-8)}
+                Treasury: {protocolStats.treasury ? `${protocolStats.treasury.slice(0, 6)}...${protocolStats.treasury.slice(-4)}` : 'On-Chain Vault'}
               </p>
             </div>
           </div>
@@ -437,10 +450,10 @@ export default function AdminPage() {
               <div className="p-4 rounded-2xl glass-slide flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Current On-Chain Treasury</span>
-                  <span className="text-xs font-mono font-bold text-slate-900">{protocolStats.treasury || AUTHORIZED_ADMIN}</span>
+                  <span className="text-xs font-mono font-bold text-slate-900">{protocolStats.treasury || 'Configured via Contract'}</span>
                 </div>
                 <a
-                  href={`https://explorer.genlayer.network/address/${protocolStats.treasury || AUTHORIZED_ADMIN}`}
+                  href={protocolStats.treasury ? `https://explorer.genlayer.network/address/${protocolStats.treasury}` : '#'}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-950 transition shadow-sm"

@@ -63,13 +63,12 @@ export interface WorkerRecord {
   slashed_count: number;
 }
 
-const AUTHORIZED_ADMIN = (process.env.NEXT_PUBLIC_ADMIN_ADDRESS || "").toLowerCase();
-
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [account, setAccount] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'gigs' | 'my-gigs' | 'leaderboard'>('gigs');
 
@@ -397,7 +396,17 @@ function DashboardContent() {
     }
   };
 
-  const isAdmin = account && account.toLowerCase() === AUTHORIZED_ADMIN.toLowerCase();
+  // Secure Server-side Admin Verification
+  useEffect(() => {
+    if (!account) {
+      setIsAdmin(false);
+      return;
+    }
+    fetch(`/api/admin/check?address=${account}`)
+      .then((res) => res.json())
+      .then((data) => setIsAdmin(Boolean(data.isAdmin)))
+      .catch(() => setIsAdmin(false));
+  }, [account]);
 
   const filteredJobs = jobs.filter((j) => {
     if (!searchQuery) return true;

@@ -15,8 +15,6 @@ interface NavbarProps {
   setActiveTab?: (tab: 'gigs' | 'my-gigs' | 'leaderboard') => void;
 }
 
-const DEV_TREASURY_ADDRESS = (process.env.NEXT_PUBLIC_ADMIN_ADDRESS || "").toLowerCase();
-
 export default function Navbar({
   account,
   onConnectWallet,
@@ -24,7 +22,18 @@ export default function Navbar({
   activeTab = 'gigs',
   setActiveTab,
 }: NavbarProps) {
-  const isAdmin = account && account.toLowerCase() === DEV_TREASURY_ADDRESS.toLowerCase();
+  const [isAdmin, setIsAdmin] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!account) {
+      setIsAdmin(false);
+      return;
+    }
+    fetch(`/api/admin/check?address=${account}`)
+      .then((res) => res.json())
+      .then((data) => setIsAdmin(Boolean(data.isAdmin)))
+      .catch(() => setIsAdmin(false));
+  }, [account]);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/70 bg-white/75 backdrop-blur-xl shadow-sm shadow-slate-200/50">
