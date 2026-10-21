@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -17,7 +17,11 @@ import {
   Coins,
   CheckCircle,
   Eye,
-  Save
+  Save,
+  Upload,
+  Camera,
+  Trash2,
+  LogOut
 } from 'lucide-react';
 import { createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
@@ -40,6 +44,8 @@ const POPULAR_SKILLS = [
 
 export default function ProfileMarketPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [account, setAccount] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -133,6 +139,69 @@ export default function ProfileMarketPage() {
     }
   }, [account, contractAddress]);
 
+  // Upload image from device memory with auto-compression
+  const handleDeviceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (JPEG, PNG, WebP, GIF)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target?.result as string;
+
+      // In-browser HTML5 canvas resize to keep size ultra-lightweight for fast SQLite persistence
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.85);
+          setAvatarUrl(compressed);
+        } else {
+          setAvatarUrl(rawDataUrl);
+        }
+        setMessage({ type: 'success', text: 'Photo loaded from device! Click "Save Profile" to finalize.' });
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetAvatar = () => {
+    setAvatarUrl(`https://api.dicebear.com/7.x/identicon/svg?seed=${account || 'user'}`);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Disconnect Wallet
+  const handleDisconnect = () => {
+    setAccount(null);
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+    }
+    router.push('/connect');
+  };
+
   const toggleRole = (role: string) => {
     if (roles.includes(role)) {
       setRoles(roles.filter((r) => r !== role));
@@ -193,6 +262,7 @@ export default function ProfileMarketPage() {
   };
 
   const effectiveAvatar = avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${account || 'user'}`;
+  const isCustomUploaded = avatarUrl && avatarUrl.startsWith('data:image');
 
   return (
     <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900">
@@ -215,14 +285,27 @@ export default function ProfileMarketPage() {
             <span className="text-sm font-extrabold text-slate-900">Job Market Appearance</span>
           </div>
 
-          <button
-            onClick={handleSave}
-            disabled={saving || loading}
-            className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-md shadow-slate-300 flex items-center space-x-1.5 disabled:opacity-50"
-          >
-            <Save className="w-3.5 h-3.5" />
-            <span>{saving ? 'Saving...' : 'Save Profile'}</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* Disconnect Wallet Button */}
+            <button
+              onClick={handleDisconnect}
+              className="p-2 sm:px-3 sm:py-2 rounded-xl glass-card hover:bg-rose-50 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-bold transition flex items-center space-x-1.5"
+              title="Disconnect Wallet"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Disconnect</span>
+            </button>
+
+            {/* Save Profile Button */}
+            <button
+              onClick={handleSave}
+              disabled={saving || loading}
+              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-md shadow-slate-300 flex items-center space-x-1.5 disabled:opacity-50"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>{saving ? 'Saving...' : 'Save Profile'}</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -264,26 +347,88 @@ export default function ProfileMarketPage() {
                   <p className="text-xs text-slate-500">How clients see your brand in marketplace gig searches.</p>
                 </div>
 
-                {/* Avatar Preview & URL */}
-                <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl glass-slide border border-white">
-                  <img
-                    src={effectiveAvatar}
-                    alt="Avatar Preview"
-                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${account || 'user'}`;
-                    }}
-                  />
-                  <div className="flex-1 w-full space-y-1">
-                    <label className="block text-[11px] font-bold uppercase text-slate-600">
-                      Avatar URL
+                {/* ================= AVATAR UPLOAD FROM DEVICE ================= */}
+                <div className="p-5 rounded-2xl glass-slide border border-white space-y-4">
+                  <div className="flex flex-col sm:flex-row items-center gap-5">
+                    
+                    {/* Image Circle Preview */}
+                    <div className="relative group shrink-0">
+                      <img
+                        src={effectiveAvatar}
+                        alt="Avatar Preview"
+                        className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-md bg-white"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${account || 'user'}`;
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute inset-0 bg-slate-900/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold"
+                        title="Upload from device"
+                      >
+                        <Camera className="w-5 h-5 mb-0.5" />
+                        <span>Change</span>
+                      </button>
+                    </div>
+
+                    {/* Upload Controls & Actions */}
+                    <div className="space-y-2.5 flex-1 w-full text-center sm:text-left">
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                        {/* Hidden Native File Input */}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleDeviceImageUpload}
+                          className="hidden"
+                        />
+
+                        {/* Trigger Button */}
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition flex items-center space-x-1.5 active:scale-95"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Upload Photo from Device</span>
+                        </button>
+
+                        {/* Reset button */}
+                        <button
+                          type="button"
+                          onClick={handleResetAvatar}
+                          className="px-3 py-2 rounded-xl glass-card hover:bg-white text-slate-600 text-xs font-semibold transition"
+                          title="Reset to default identicon"
+                        >
+                          Reset
+                        </button>
+                      </div>
+
+                      <p className="text-[11px] text-slate-500">
+                        {isCustomUploaded ? (
+                          <span className="text-emerald-700 font-semibold flex items-center justify-center sm:justify-start space-x-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Custom photo loaded from device memory</span>
+                          </span>
+                        ) : (
+                          <span>Supports PNG, JPG, WebP, or GIF from your phone or computer.</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Fallback Custom URL input toggle */}
+                  <div className="pt-2 border-t border-slate-200/60">
+                    <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                      Or Paste Image URL directly
                     </label>
                     <input
                       type="url"
-                      value={avatarUrl}
+                      value={avatarUrl.startsWith('data:image') ? '' : avatarUrl}
                       onChange={(e) => setAvatarUrl(e.target.value)}
-                      placeholder="https://... (or leave blank for auto-generated identicon)"
-                      className="w-full glass-input rounded-xl px-3 py-2 text-xs"
+                      placeholder={avatarUrl.startsWith('data:image') ? '(Custom photo uploaded from device memory)' : 'https://...'}
+                      className="w-full glass-input rounded-xl px-3 py-1.5 text-xs text-slate-700"
                     />
                   </div>
                 </div>
@@ -517,7 +662,7 @@ export default function ProfileMarketPage() {
                     <img
                       src={effectiveAvatar}
                       alt="Avatar"
-                      className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md shrink-0"
+                      className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md shrink-0 bg-white"
                     />
                     <div>
                       <h3 className="text-lg font-black text-slate-900">

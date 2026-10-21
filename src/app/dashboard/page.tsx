@@ -25,7 +25,8 @@ import {
   X,
   ChevronRight,
   TrendingUp,
-  Settings
+  Settings,
+  LogOut
 } from 'lucide-react';
 import { createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
@@ -144,6 +145,15 @@ function DashboardContent() {
       router.push('/connect');
     }
   }, [router]);
+
+  // Disconnect Wallet
+  const handleDisconnect = () => {
+    setAccount(null);
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+    }
+    router.push('/connect');
+  };
 
   // Fetch User DB Profile
   const loadUserProfile = useCallback(async (addr: string) => {
@@ -531,6 +541,16 @@ function DashboardContent() {
                 </p>
               </div>
             </Link>
+
+            {/* Disconnect Wallet Button */}
+            <button
+              onClick={handleDisconnect}
+              className="p-2 sm:px-3 sm:py-2 rounded-2xl glass-card hover:bg-rose-50 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-bold transition flex items-center space-x-1.5"
+              title="Disconnect Wallet"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Disconnect</span>
+            </button>
 
             {/* Post a Gig Button */}
             <button
