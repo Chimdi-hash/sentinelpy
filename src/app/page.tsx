@@ -80,28 +80,20 @@ export default function LandingPage() {
             <div className="w-10 h-10 rounded-2xl glass-slide flex items-center justify-center text-slate-800 shadow-md shadow-slate-300/40 border border-white group-hover:scale-105 transition-transform">
               <ShieldCheck className="w-5 h-5 text-slate-800" />
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-xl font-extrabold tracking-tight text-slate-900">
-                  Trustless<span className="text-slate-500">Work</span>
-                </span>
-                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 tracking-wider uppercase">
-                  GenVM AI
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium">Decentralized Escrow & Quality Protocol</p>
-            </div>
+            <span className="text-xl font-extrabold tracking-tight text-slate-900">
+              Trustless<span className="text-slate-500">Work</span>
+            </span>
           </Link>
 
           {/* Navigation Links */}
-          <nav className="hidden md:flex items-center space-x-6">
-            <a href="#features" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+          <nav className="hidden md:flex items-center space-x-8">
+            <a href="#mechanics" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
               Protocol Mechanics
             </a>
-            <a href="#how-it-works" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+            <a href="#lifecycle" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
               Lifecycle
             </a>
-            <a href="#slides" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+            <a href="#pillars" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
               Core Pillars
             </a>
           </nav>
@@ -128,10 +120,15 @@ export default function LandingPage() {
           {/* Subtle Ambient Ash Glass Orbs */}
           <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-96 h-96 bg-slate-200/50 rounded-full blur-3xl -z-10 pointer-events-none"></div>
 
-          {/* Top Pill */}
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full glass-slide text-slate-700 text-xs font-semibold shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-slate-700" />
-            <span>Milestone Escrows Governed by Impartial GenLayer Consensus</span>
+          {/* Prominent Hero Badge: Decentralized Escrow & Quality Protocol */}
+          <div className="inline-flex items-center space-x-2.5 px-4 py-2 rounded-full glass-panel border border-white text-slate-800 shadow-md shadow-slate-200/60 hover:shadow-lg transition">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span className="text-xs font-bold tracking-wider uppercase text-slate-800">
+              Decentralized Escrow &amp; Quality Protocol
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+              GenVM
+            </span>
           </div>
 
           {/* Headline */}
@@ -186,8 +183,11 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ================= SECTION 2: INTERACTIVE GLASS SLIDES ================= */}
-        <section id="slides" className="space-y-8 pt-10">
+        {/* ================= SECTION 2: PROTOCOL MECHANICS & CORE PILLARS ================= */}
+        <section id="mechanics" className="scroll-mt-28 space-y-8 pt-10">
+          <div id="pillars" className="scroll-mt-28"></div>
+          <div id="features" className="scroll-mt-28"></div>
+          <div id="slides" className="scroll-mt-28"></div>
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Core Architecture</span>
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -269,7 +269,8 @@ export default function LandingPage() {
         </section>
 
         {/* ================= SECTION 3: 3-STEP GLASS PALETTE LIFECYCLE ================= */}
-        <section id="how-it-works" className="space-y-8 pt-10">
+        <section id="lifecycle" className="scroll-mt-28 space-y-8 pt-10">
+          <div id="how-it-works" className="scroll-mt-28"></div>
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Simple 3-Step Flow</span>
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">

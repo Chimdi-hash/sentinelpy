@@ -465,17 +465,9 @@ function DashboardContent() {
               <div className="w-10 h-10 rounded-2xl glass-slide flex items-center justify-center text-slate-800 shadow-md shadow-slate-300/40 border border-white group-hover:scale-105 transition-transform">
                 <ShieldCheck className="w-5 h-5 text-slate-800" />
               </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xl font-extrabold tracking-tight text-slate-900">
-                    Trustless<span className="text-slate-500">Work</span>
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 tracking-wider uppercase">
-                    GenVM
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 font-medium">Decentralized Escrow Protocol</p>
-              </div>
+              <span className="text-xl font-extrabold tracking-tight text-slate-900">
+                Trustless<span className="text-slate-500">Work</span>
+              </span>
             </Link>
 
             {/* Navigation Tabs */}
