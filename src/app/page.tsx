@@ -87,14 +87,14 @@ export default function LandingPage() {
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8">
+            <a href="#pillars" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+              Core Pillars
+            </a>
             <a href="#mechanics" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
               Protocol Mechanics
             </a>
             <a href="#lifecycle" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
               Lifecycle
-            </a>
-            <a href="#pillars" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
-              Core Pillars
             </a>
           </nav>
 
@@ -183,10 +183,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ================= SECTION 2: PROTOCOL MECHANICS & CORE PILLARS ================= */}
-        <section id="mechanics" className="scroll-mt-28 space-y-8 pt-10">
-          <div id="pillars" className="scroll-mt-28"></div>
-          <div id="features" className="scroll-mt-28"></div>
+        {/* ================= SECTION 2: CORE PILLARS ================= */}
+        <section id="pillars" className="scroll-mt-28 space-y-8 pt-10">
           <div id="slides" className="scroll-mt-28"></div>
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Core Architecture</span>
@@ -268,7 +266,79 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ================= SECTION 3: 3-STEP GLASS PALETTE LIFECYCLE ================= */}
+        {/* ================= SECTION 3: PROTOCOL MECHANICS ================= */}
+        <section id="mechanics" className="scroll-mt-28 space-y-8 pt-10">
+          <div id="features" className="scroll-mt-28"></div>
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">On-Chain Rules &amp; Game Theory</span>
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              Cryptographic Protocol Mechanics
+            </h2>
+            <p className="text-xs text-slate-600">
+              Deterministic smart contract invariants governed by GenLayer GenVM—zero human intervention.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Rule 1: Escrow Vault */}
+            <div className="glass-card glass-card-hover p-6 rounded-3xl space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-md">
+                <Lock className="w-5 h-5 text-slate-100" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Milestone Vault</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Client capital is physically locked in the smart contract bytecode. Nobody can drain, seize, or arbitrarily reverse deposited funds.
+              </p>
+              <div className="pt-2 text-[11px] font-mono font-semibold text-slate-700">
+                Rule: 100% Locked Upon Posting
+              </div>
+            </div>
+
+            {/* Rule 2: 2.5% Take-Rate */}
+            <div className="glass-card glass-card-hover p-6 rounded-3xl space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 flex items-center justify-center font-bold text-xs">
+                2.5%
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Success Take-Rate</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Upon unanimous GenVM consensus approval, exactly 2.5% is routed to the protocol treasury, while 97.5% + 100% of collateral streams to the worker.
+              </p>
+              <div className="pt-2 text-[11px] font-mono font-semibold text-emerald-700">
+                Rule: Payout = 97.5% + Stake Return
+              </div>
+            </div>
+
+            {/* Rule 3: 100% Slash */}
+            <div className="glass-card glass-card-hover p-6 rounded-3xl space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-center justify-center shadow-sm">
+                <Scale className="w-5 h-5 text-rose-600" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Collateral Slashing</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Substandard work or hallucinated deliverables forfeit 100% of the freelancer's staked collateral directly to the protocol treasury.
+              </p>
+              <div className="pt-2 text-[11px] font-mono font-semibold text-rose-700">
+                Rule: 100% Slashed on Rejection
+              </div>
+            </div>
+
+            {/* Rule 4: Option B Preservation */}
+            <div className="glass-card glass-card-hover p-6 rounded-3xl space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 flex items-center justify-center shadow-sm">
+                <RotateCcw className="w-5 h-5 text-slate-700" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Capital Preservation</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                If a freelancer fails, the client's escrow is 100% preserved in the contract pool—empowering immediate 1-click free re-listing or native refund.
+              </p>
+              <div className="pt-2 text-[11px] font-mono font-semibold text-slate-700">
+                Rule: 0% Client Loss on Failure
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================= SECTION 4: 3-STEP GLASS PALETTE LIFECYCLE ================= */}
         <section id="lifecycle" className="scroll-mt-28 space-y-8 pt-10">
           <div id="how-it-works" className="scroll-mt-28"></div>
           <div className="text-center max-w-2xl mx-auto space-y-2">
