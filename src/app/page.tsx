@@ -169,34 +169,34 @@ export default function LandingPage() {
         {/* ================= HERO SECTION ================= */}
         <section className="text-center max-w-4xl mx-auto space-y-8 relative">
           
-          {/* Prominent Hero Badge: Decentralized Escrow & Quality Protocol */}
-          <div className="inline-flex items-center space-x-2.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full glass-panel border border-white text-slate-900 shadow-lg shadow-slate-400/20 hover:shadow-xl transition">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="text-[11px] sm:text-xs font-bold tracking-wider uppercase text-slate-800">
-              Decentralized Escrow &amp; Quality Protocol
+          {/* Prominent Hero Badge: Decentralized Escrow & Quality Protocol (Concise on Mobile) */}
+          <div className="inline-flex items-center space-x-2 sm:space-x-2.5 px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-full glass-panel border border-white text-slate-900 shadow-md sm:shadow-lg shadow-slate-400/20 hover:shadow-xl transition max-w-[92vw] sm:max-w-none">
+            <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
+            <span className="text-[10px] sm:text-xs font-bold tracking-wider uppercase text-slate-800 truncate">
+              <span className="hidden sm:inline">Decentralized </span>Escrow &amp; Quality Protocol
             </span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white font-mono">
+            <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-900 text-white font-mono shrink-0">
               GenVM
             </span>
           </div>
 
-          {/* Headline with gliding green glassmorphic circles */}
+          {/* Headline with gliding green glassmorphic circles (Compact on Mobile) */}
           <div className="relative inline-block w-full max-w-4xl mx-auto px-2">
             
             {/* Gliding Green Glassmorphic Circle at the level of 'Guaranteed' on the left */}
-            <div className="absolute -left-2 sm:-left-6 md:-left-10 lg:-left-20 xl:-left-24 -bottom-3 sm:bottom-1 md:bottom-2 z-20 animate-glide-reverse select-none pointer-events-none sm:pointer-events-auto">
-              <div className="w-20 h-20 sm:w-26 sm:h-26 md:w-32 md:h-32 rounded-full glass-green-orb flex flex-col items-center justify-center p-1.5 sm:p-2.5 sm:p-3 text-center shadow-xl sm:shadow-2xl transition-transform hover:scale-105">
+            <div className="absolute -left-1 sm:-left-6 md:-left-10 lg:-left-20 xl:-left-24 -bottom-2 sm:bottom-1 md:bottom-2 z-20 animate-glide-reverse select-none pointer-events-none sm:pointer-events-auto">
+              <div className="w-14 h-14 sm:w-24 sm:h-24 md:w-30 md:h-30 lg:w-32 lg:h-32 rounded-full glass-green-orb flex flex-col items-center justify-center p-1 sm:p-2.5 sm:p-3 text-center shadow-lg sm:shadow-2xl transition-transform hover:scale-105">
                 {/* Pulsing Status Dot */}
-                <div className="flex items-center space-x-1 mb-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                <div className="flex items-center space-x-0.5 sm:space-x-1 mb-0.5">
+                  <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
                 </div>
                 {/* Decentralized */}
-                <span className="text-[7.5px] sm:text-[9px] md:text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider leading-tight">
+                <span className="text-[6px] sm:text-[8.5px] md:text-[10px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-none">
                   decentralized
                 </span>
                 {/* Freelance Hub */}
-                <span className="text-[8px] sm:text-[10px] md:text-[11.5px] font-black text-emerald-950 tracking-tight leading-tight uppercase font-mono mt-0.5">
+                <span className="text-[7px] sm:text-[10px] md:text-[11.5px] font-black text-emerald-950 tracking-tight leading-tight uppercase font-mono mt-0.5">
                   freelance hub
                 </span>
               </div>
@@ -210,19 +210,19 @@ export default function LandingPage() {
             </h1>
 
             {/* Gliding Green Glassmorphic Circle at the level of 'Consensus' on the right */}
-            <div className="absolute -right-2 sm:-right-6 md:-right-10 lg:-right-20 xl:-right-24 -bottom-3 sm:bottom-1 md:bottom-2 z-20 animate-glide select-none pointer-events-none sm:pointer-events-auto">
-              <div className="w-20 h-20 sm:w-26 sm:h-26 md:w-32 md:h-32 rounded-full glass-green-orb flex flex-col items-center justify-center p-1.5 sm:p-2.5 sm:p-3 text-center shadow-xl sm:shadow-2xl transition-transform hover:scale-105">
+            <div className="absolute -right-1 sm:-right-6 md:-right-10 lg:-right-20 xl:-right-24 -bottom-2 sm:bottom-1 md:bottom-2 z-20 animate-glide select-none pointer-events-none sm:pointer-events-auto">
+              <div className="w-14 h-14 sm:w-24 sm:h-24 md:w-30 md:h-30 lg:w-32 lg:h-32 rounded-full glass-green-orb flex flex-col items-center justify-center p-1 sm:p-2.5 sm:p-3 text-center shadow-lg sm:shadow-2xl transition-transform hover:scale-105">
                 {/* Pulsing Status Dot */}
-                <div className="flex items-center space-x-1 mb-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                <div className="flex items-center space-x-0.5 sm:space-x-1 mb-0.5">
+                  <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
                 </div>
                 {/* 100% */}
-                <span className="text-xs sm:text-sm md:text-base font-black text-emerald-950 tracking-tight leading-none font-mono">
+                <span className="text-[9.5px] sm:text-sm md:text-base font-black text-emerald-950 tracking-tight leading-none font-mono">
                   100%
                 </span>
                 {/* Trust & Execution */}
-                <span className="text-[7.5px] sm:text-[9px] md:text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider leading-tight mt-0.5">
+                <span className="text-[6px] sm:text-[8.5px] md:text-[10px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-tight mt-0.5">
                   trust &amp; execution
                 </span>
               </div>
