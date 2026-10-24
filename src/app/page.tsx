@@ -71,6 +71,18 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900 relative">
       
+      {/* Full Page Fixed Background Layer (hero.bg) - Visible Across Entire Landing Page */}
+      <div className="fixed inset-0 z-0 pointer-events-none select-none overflow-hidden">
+        <img
+          src="/hero-bg.jpeg"
+          alt="Remote Freelance Workspace"
+          className="w-full h-full object-cover object-center sm:object-[center_35%] scale-100 opacity-95"
+        />
+        {/* Crisp Translucent Glass Tint - Maximizes Image Visibility while Preserving Typography Contrast */}
+        <div className="absolute inset-0 bg-white/35 backdrop-blur-[0.5px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white/40" />
+      </div>
+
       {/* Top Glassmorphic Navigation */}
       <header className="sticky top-0 z-40 w-full border-b border-white/60 bg-white/70 backdrop-blur-xl shadow-sm shadow-slate-200/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -112,86 +124,70 @@ export default function LandingPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 space-y-24">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 space-y-24">
         
-        {/* ================= HERO SECTION (WITH HERO.BG BACKGROUND) ================= */}
-        <section className="relative rounded-3xl overflow-hidden p-6 sm:p-12 md:p-16 border border-white/90 shadow-2xl shadow-slate-200/80 text-center max-w-5xl mx-auto space-y-8 my-2">
+        {/* ================= HERO SECTION ================= */}
+        <section className="text-center max-w-4xl mx-auto space-y-8 relative">
           
-          {/* Background Image Layer from hero.bg */}
-          <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
-            <img
-              src="/hero-bg.jpeg"
-              alt="Remote Web3 Workspace"
-              className="w-full h-full object-cover object-center sm:object-[center_32%] scale-105 opacity-80"
-            />
-            {/* Elegant Translucent Glass Frosting: keeps workspace photo clearly visible while ensuring text contrast */}
-            <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px]" />
-            <div className="absolute inset-0 bg-gradient-to-b from-white/65 via-white/40 to-white/75" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.6)_0%,rgba(255,255,255,0.3)_50%,rgba(241,245,249,0.7)_100%)]" />
+          {/* Prominent Hero Badge: Decentralized Escrow & Quality Protocol */}
+          <div className="inline-flex items-center space-x-2.5 px-5 py-2.5 rounded-full glass-panel border border-white text-slate-900 shadow-lg shadow-slate-400/20 hover:shadow-xl transition">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span className="text-xs font-bold tracking-wider uppercase text-slate-800">
+              Decentralized Escrow &amp; Quality Protocol
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white font-mono">
+              GenVM
+            </span>
           </div>
 
-          {/* Hero Content Layer (Elevated above background with z-10) */}
-          <div className="relative z-10 space-y-8 max-w-4xl mx-auto">
-            {/* Prominent Hero Badge: Decentralized Escrow & Quality Protocol */}
-            <div className="inline-flex items-center space-x-2.5 px-4 py-2 rounded-full glass-panel border border-white text-slate-800 shadow-md shadow-slate-300/40 hover:shadow-lg transition">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              <span className="text-xs font-bold tracking-wider uppercase text-slate-800">
-                Decentralized Escrow &amp; Quality Protocol
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white font-mono">
-                GenVM
-              </span>
+          {/* Headline with drop shadow for crisp readability */}
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-slate-950 leading-[1.1] drop-shadow-sm">
+            Work with confidence. <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-800 to-slate-600">
+              Guaranteed by AI Consensus.
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-base sm:text-lg text-slate-800 max-w-2xl mx-auto leading-relaxed font-semibold drop-shadow-sm">
+            Clients lock escrows with clear acceptance rubrics. Freelancers stake collateral to guarantee performance. GenVM validators evaluate deliverables with mathematical objectivity—eliminating biased human arbitration.
+          </p>
+
+          {/* Action CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <Link
+              href={connectedAccount ? "/dashboard" : "/connect"}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition shadow-2xl shadow-slate-900/30 flex items-center justify-center space-x-2 group active:scale-95"
+            >
+              <span>Launch Dashboard</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+
+            <a
+              href="#slides"
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl glass-card glass-card-hover text-slate-900 font-bold text-sm transition flex items-center justify-center space-x-2 bg-white/85 hover:bg-white shadow-md shadow-slate-300/30"
+            >
+              <span>Explore How It Works</span>
+            </a>
+          </div>
+
+          {/* Live Trust Metrics Strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-10 max-w-3xl mx-auto">
+            <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
+              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Escrow Security</span>
+              <p className="text-lg font-black text-slate-900">100% Locked</p>
             </div>
-
-            {/* Headline */}
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-slate-950 leading-[1.1] drop-shadow-sm">
-              Work with confidence. <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-700 to-slate-500">
-                Guaranteed by AI Consensus.
-              </span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-base sm:text-lg text-slate-700 max-w-2xl mx-auto leading-relaxed font-medium">
-              Clients lock escrows with clear acceptance rubrics. Freelancers stake collateral to guarantee performance. GenVM validators evaluate deliverables with mathematical objectivity—eliminating biased human arbitration.
-            </p>
-
-            {/* Action CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-              <Link
-                href={connectedAccount ? "/dashboard" : "/connect"}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition shadow-xl shadow-slate-900/20 flex items-center justify-center space-x-2 group active:scale-95"
-              >
-                <span>Launch Dashboard</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-
-              <a
-                href="#slides"
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl glass-card glass-card-hover text-slate-900 font-bold text-sm transition flex items-center justify-center space-x-2 bg-white/80 hover:bg-white"
-              >
-                <span>Explore How It Works</span>
-              </a>
+            <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
+              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Arbitration Bias</span>
+              <p className="text-lg font-black text-slate-900">0% Human Error</p>
             </div>
-
-            {/* Live Trust Metrics Strip */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 max-w-3xl mx-auto">
-              <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-md">
-                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Escrow Security</span>
-                <p className="text-lg font-black text-slate-900">100% Locked</p>
-              </div>
-              <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-md">
-                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Arbitration Bias</span>
-                <p className="text-lg font-black text-slate-900">0% Human Error</p>
-              </div>
-              <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-md">
-                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Protocol Fee</span>
-                <p className="text-lg font-black text-slate-900">2.5% On Success</p>
-              </div>
-              <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-md">
-                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Option B</span>
-                <p className="text-lg font-black text-slate-900">Preserved Escrow</p>
-              </div>
+            <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
+              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Protocol Fee</span>
+              <p className="text-lg font-black text-slate-900">2.5% On Success</p>
+            </div>
+            <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
+              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Option B</span>
+              <p className="text-lg font-black text-slate-900">Preserved Escrow</p>
             </div>
           </div>
         </section>
@@ -453,7 +449,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200/80 bg-white/50 backdrop-blur-md py-8">
+      <footer className="relative z-10 border-t border-white/60 bg-white/70 backdrop-blur-md py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center space-x-2">
             <ShieldCheck className="w-4 h-4 text-slate-700" />
