@@ -69,7 +69,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900">
+    <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900 relative">
       
       {/* Top Glassmorphic Navigation */}
       <header className="sticky top-0 z-40 w-full border-b border-white/60 bg-white/70 backdrop-blur-xl shadow-sm shadow-slate-200/40">
@@ -110,6 +110,23 @@ export default function LandingPage() {
           </div>
         </div>
       </header>
+
+      {/* Atmospheric Hero Background Image Layer (from hero.bg) */}
+      <div className="absolute top-0 left-0 right-0 h-[680px] sm:h-[760px] overflow-hidden pointer-events-none select-none -z-10">
+        <img
+          src="/hero-bg.jpeg"
+          alt="Trustless Remote Work Lifestyle"
+          className="w-full h-full object-cover object-center sm:object-[center_28%] scale-105 opacity-30"
+        />
+        {/* Soft Glass Frosted Blur & Ash Mesh */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/70 to-[#f8fafc] backdrop-blur-[1.5px]" />
+        {/* Radial Spotlight to center focus on typography */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.75)_15%,rgba(248,250,252,0.85)_65%,#f8fafc_100%)]" />
+        {/* Ambient Ash Glass Glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-slate-300/30 rounded-full blur-3xl pointer-events-none" />
+        {/* Seamless Bottom Fade to content */}
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#f8fafc] via-[#f8fafc]/90 to-transparent" />
+      </div>
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 space-y-24">
