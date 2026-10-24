@@ -424,31 +424,34 @@ export default function ProfileMarketPage() {
   const isCustomUploaded = avatarUrl && avatarUrl.startsWith('data:image');
 
   return (
-    <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900">
+    <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900 overflow-x-clip">
       
       {/* Top Glass Header - Concise Height */}
       <header className="sticky top-0 z-40 w-full border-b border-white/70 bg-white/75 backdrop-blur-xl shadow-sm shadow-slate-200/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-2">
           <Link
             href="/dashboard"
-            className="flex items-center space-x-2 text-xs font-bold text-slate-700 hover:text-slate-950 transition"
+            className="flex items-center space-x-1.5 text-xs font-bold text-slate-700 hover:text-slate-950 transition shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
+            <span className="hidden sm:inline">Back to Dashboard</span>
+            <span className="sm:hidden">Back</span>
           </Link>
 
-          <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 rounded-xl glass-slide flex items-center justify-center text-slate-800 shadow-sm border border-white">
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            <div className="w-7 h-7 rounded-xl glass-slide flex items-center justify-center text-slate-800 shadow-sm border border-white shrink-0">
               <User className="w-4 h-4 text-slate-800" />
             </div>
-            <span className="text-sm font-extrabold text-slate-900">Job Market Appearance</span>
+            <span className="text-xs sm:text-sm font-extrabold text-slate-900 truncate">
+              <span className="hidden sm:inline">Job Market </span>Appearance
+            </span>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
             {/* Disconnect Wallet Button */}
             <button
               onClick={handleDisconnect}
-              className="p-2 sm:px-3 sm:py-2 rounded-xl glass-card hover:bg-rose-50 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-bold transition flex items-center space-x-1.5"
+              className="p-1.5 sm:px-3 sm:py-2 rounded-xl glass-card hover:bg-rose-50 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-bold transition flex items-center space-x-1.5"
               title="Disconnect Wallet"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -459,10 +462,10 @@ export default function ProfileMarketPage() {
             <button
               onClick={handleSave}
               disabled={saving || loading}
-              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-md shadow-slate-300 flex items-center space-x-1.5 disabled:opacity-50"
+              className="px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-md shadow-slate-300 flex items-center space-x-1.5 disabled:opacity-50"
             >
               <Save className="w-3.5 h-3.5" />
-              <span>{saving ? 'Saving...' : 'Save Profile'}</span>
+              <span>{saving ? 'Saving...' : 'Save'}</span>
             </button>
           </div>
         </div>

@@ -652,28 +652,28 @@ function DashboardContent() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900">
+    <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900 overflow-x-clip">
       
       {/* ================= WELCOME ANIMATION MODAL/BANNER ================= */}
       {showWelcome && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 animate-welcome w-full max-w-lg px-4">
-          <div className="glass-panel p-5 rounded-2xl shadow-2xl border border-white flex items-center justify-between gap-4">
+        <div className="fixed top-20 sm:top-24 left-1/2 -translate-x-1/2 z-50 animate-welcome w-full max-w-lg px-4">
+          <div className="glass-panel p-4 sm:p-5 rounded-2xl shadow-2xl border border-white flex items-center justify-between gap-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-md">
-                <Sparkles className="w-5 h-5" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-md">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <h4 className="text-sm font-extrabold text-slate-900">
+              <div className="min-w-0">
+                <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 truncate">
                   Welcome to TrustlessWork, {userProfile?.displayName || 'Builder'}!
                 </h4>
-                <p className="text-xs text-slate-500 font-mono">
+                <p className="text-[10px] sm:text-xs text-slate-500 font-mono">
                   {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : ''} authenticated
                 </p>
               </div>
             </div>
             <button
               onClick={() => setShowWelcome(false)}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition shrink-0"
             >
               <X className="w-4 h-4" />
             </button>
@@ -683,15 +683,15 @@ function DashboardContent() {
 
       {/* ================= TOP GLASS NAVIGATION - Concise Height ================= */}
       <header className="sticky top-0 z-40 w-full border-b border-white/70 bg-white/75 backdrop-blur-xl shadow-sm shadow-slate-200/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-2">
           
           {/* Brand */}
-          <div className="flex items-center space-x-4 sm:space-x-6">
-            <Link href="/" className="flex items-center space-x-2.5 group">
-              <div className="w-8 h-8 rounded-xl glass-slide flex items-center justify-center text-slate-800 shadow-sm border border-white group-hover:scale-105 transition-transform">
-                <ShieldCheck className="w-4 h-4 text-slate-800" />
+          <div className="flex items-center space-x-3 sm:space-x-6 shrink-0">
+            <Link href="/" className="flex items-center space-x-2 group">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl glass-slide flex items-center justify-center text-slate-800 shadow-sm border border-white group-hover:scale-105 transition-transform">
+                <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-800" />
               </div>
-              <span className="text-base sm:text-lg font-black tracking-tight text-slate-900">
+              <span className="text-sm sm:text-lg font-black tracking-tight text-slate-900">
                 Trustless<span className="text-slate-500">Work</span>
               </span>
             </Link>
@@ -732,7 +732,7 @@ function DashboardContent() {
           </div>
 
           {/* Right Section: Stealth Admin + PROFILE BUTTON + Post Gig */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-1.5 sm:space-x-3">
             
             {/* Stealth Admin Portal Pill (Only for authorized admin) */}
             {isAdmin && (
@@ -748,13 +748,13 @@ function DashboardContent() {
             {/* PROFILE BUTTON: Directly links to /profile */}
             <Link
               href="/profile"
-              className="flex items-center space-x-2.5 px-3.5 py-1.5 rounded-2xl glass-card glass-card-hover group border border-white"
+              className="flex items-center space-x-2 px-2 py-1 sm:px-3.5 sm:py-1.5 rounded-2xl glass-card glass-card-hover group border border-white"
               title="Edit Your Appearance in the Job Market"
             >
               <img
                 src={userProfile?.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${account || 'user'}`}
                 alt="Avatar"
-                className="w-7 h-7 rounded-full object-cover border border-slate-200"
+                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover border border-slate-200"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${account || 'user'}`;
                 }}
@@ -782,7 +782,7 @@ function DashboardContent() {
             {/* Post a Gig Button */}
             <button
               onClick={() => setShowPostJobModal(true)}
-              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-md shadow-slate-300 flex items-center space-x-1.5 active:scale-95"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-md shadow-slate-300 flex items-center space-x-1.5 active:scale-95 shrink-0"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>Post Gig</span>
@@ -793,8 +793,42 @@ function DashboardContent() {
       </header>
 
       {/* ================= MAIN DASHBOARD BODY ================= */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
         
+        {/* Mobile Sub-Navigation Segmented Control (< md) */}
+        <div className="md:hidden flex items-center p-1 rounded-2xl glass-panel border border-white/80 shadow-sm overflow-x-auto gap-1">
+          <button
+            onClick={() => setActiveTab('gigs')}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition text-center whitespace-nowrap ${
+              activeTab === 'gigs'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+            }`}
+          >
+            Gigs ({jobs.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('my-gigs')}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition text-center whitespace-nowrap ${
+              activeTab === 'my-gigs'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+            }`}
+          >
+            My Escrows
+          </button>
+          <button
+            onClick={() => setActiveTab('leaderboard')}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition text-center whitespace-nowrap ${
+              activeTab === 'leaderboard'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+            }`}
+          >
+            Leaderboard
+          </button>
+        </div>
+
         {/* Global Feedback Alert */}
         {evaluationFeedback && (
           <div className="p-4 rounded-2xl glass-panel border border-slate-300 text-slate-800 text-xs font-mono flex items-center justify-between shadow-sm">
@@ -941,12 +975,12 @@ function DashboardContent() {
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
                   {/* View Mode Toggle */}
-                  <div className="flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200 text-xs">
+                  <div className="flex items-center justify-center p-1 rounded-xl bg-slate-100 border border-slate-200 text-xs w-full sm:w-auto">
                     <button
                       onClick={() => setJobsViewMode('filtered')}
-                      className={`px-3 py-1.5 rounded-lg font-semibold transition ${
+                      className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-semibold transition text-center whitespace-nowrap ${
                         jobsViewMode === 'filtered' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                       }`}
                     >
@@ -954,7 +988,7 @@ function DashboardContent() {
                     </button>
                     <button
                       onClick={() => { setJobsViewMode('sectioned'); setSelectedCategory('ALL'); }}
-                      className={`px-3 py-1.5 rounded-lg font-semibold transition ${
+                      className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-semibold transition text-center whitespace-nowrap ${
                         jobsViewMode === 'sectioned' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                       }`}
                     >
@@ -1457,8 +1491,8 @@ function DashboardContent() {
 
       {/* --- MODAL 1: POST A GIG --- */}
       {showPostJobModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md overflow-y-auto">
-          <div className="relative w-full max-w-xl glass-panel p-6 sm:p-8 rounded-3xl text-slate-900 my-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-xl glass-panel p-5 sm:p-8 rounded-3xl text-slate-900 my-auto shadow-2xl max-h-[92vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-slate-900 mb-2">Post a New Gig</h3>
             <p className="text-xs text-slate-500 mb-6">
               Lock funds into milestone escrow with an objective rubric. GenVM AI validators evaluate deliverables directly against this criteria.
@@ -1672,8 +1706,8 @@ function DashboardContent() {
 
       {/* --- MODAL 2: SUBMIT DELIVERABLE --- */}
       {showSubmitModal && selectedJobForSubmit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md overflow-y-auto">
-          <div className="relative w-full max-w-xl glass-panel p-6 sm:p-8 rounded-3xl text-slate-900 my-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-xl glass-panel p-5 sm:p-8 rounded-3xl text-slate-900 my-auto shadow-2xl max-h-[92vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-slate-900 mb-2">Stake & Submit Deliverable</h3>
             <p className="text-xs text-slate-500 mb-4">
               Submitting for: <span className="font-bold text-slate-900">{selectedJobForSubmit.title}</span>
@@ -1748,8 +1782,8 @@ function DashboardContent() {
 
       {/* --- MODAL 3: RELIST GIG --- */}
       {showRelistModal && selectedJobForRelist && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md overflow-y-auto">
-          <div className="relative w-full max-w-xl glass-panel p-6 sm:p-8 rounded-3xl text-slate-900 my-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-xl glass-panel p-5 sm:p-8 rounded-3xl text-slate-900 my-auto shadow-2xl max-h-[92vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-slate-900 mb-2">Re-list Gig (Zero Deposit)</h3>
             <p className="text-xs text-slate-500 mb-4">
               Your deposited escrow is intact in the smart contract. You can clarify the acceptance rubric before re-opening to new freelancers.

@@ -15,12 +15,15 @@ import {
   Cpu, 
   Users,
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  Menu,
+  X
 } from 'lucide-react';
 
 export default function LandingPage() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [connectedAccount, setConnectedAccount] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Check if wallet is already connected
   useEffect(() => {
@@ -69,7 +72,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900 relative">
+    <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900 relative overflow-x-clip">
       
       {/* Full Page Fixed Background Layer (hero.bg) - Visible Across Entire Landing Page */}
       <div className="fixed inset-0 z-0 pointer-events-none select-none overflow-hidden">
@@ -97,7 +100,7 @@ export default function LandingPage() {
             </span>
           </Link>
 
-          {/* Navigation Links */}
+          {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center space-x-6 sm:space-x-8">
             <a href="#pillars" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
               Core Pillars
@@ -110,17 +113,54 @@ export default function LandingPage() {
             </a>
           </nav>
 
-          {/* Launch Dashboard Action Button */}
-          <div className="flex items-center space-x-3">
+          {/* Launch Dashboard Action Button + Mobile Hamburger Toggle */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
             <Link
               href={connectedAccount ? "/dashboard" : "/connect"}
-              className="px-4 py-1.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-md shadow-slate-400/20 flex items-center space-x-1.5 active:scale-95"
+              className="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-md shadow-slate-400/20 flex items-center space-x-1.5 active:scale-95"
             >
               <span>Launch Dashboard</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
+
+            {/* Mobile Menu Hamburger Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-xl glass-card text-slate-800 hover:bg-white transition"
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4 text-slate-800" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer (< md) */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-b border-white/80 bg-white/95 backdrop-blur-2xl shadow-xl px-4 py-4 space-y-2 transition-all">
+            <a
+              href="#pillars"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition"
+            >
+              Core Pillars
+            </a>
+            <a
+              href="#mechanics"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition"
+            >
+              Protocol Mechanics
+            </a>
+            <a
+              href="#lifecycle"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition"
+            >
+              Lifecycle Flow
+            </a>
+          </div>
+        )}
       </header>
 
       {/* Main Content Area */}
@@ -130,9 +170,9 @@ export default function LandingPage() {
         <section className="text-center max-w-4xl mx-auto space-y-8 relative">
           
           {/* Prominent Hero Badge: Decentralized Escrow & Quality Protocol */}
-          <div className="inline-flex items-center space-x-2.5 px-5 py-2.5 rounded-full glass-panel border border-white text-slate-900 shadow-lg shadow-slate-400/20 hover:shadow-xl transition">
+          <div className="inline-flex items-center space-x-2.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full glass-panel border border-white text-slate-900 shadow-lg shadow-slate-400/20 hover:shadow-xl transition">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="text-xs font-bold tracking-wider uppercase text-slate-800">
+            <span className="text-[11px] sm:text-xs font-bold tracking-wider uppercase text-slate-800">
               Decentralized Escrow &amp; Quality Protocol
             </span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white font-mono">
@@ -141,8 +181,8 @@ export default function LandingPage() {
           </div>
 
           {/* Headline with gliding green glassmorphic circle */}
-          <div className="relative inline-block w-full max-w-4xl mx-auto">
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-slate-950 leading-[1.1] drop-shadow-sm">
+          <div className="relative inline-block w-full max-w-4xl mx-auto px-2">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-slate-950 leading-[1.15] drop-shadow-sm">
               Work with confidence. <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-800 to-slate-600">
                 Guaranteed by AI Consensus.
@@ -150,8 +190,8 @@ export default function LandingPage() {
             </h1>
 
             {/* Gliding Green Glassmorphic Circle at the level of 'Consensus' on the right */}
-            <div className="absolute right-0 sm:-right-6 md:-right-10 lg:-right-20 xl:-right-24 bottom-0 sm:bottom-1 md:bottom-2 z-20 animate-glide select-none">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full glass-green-orb flex flex-col items-center justify-center p-2.5 sm:p-3 text-center shadow-2xl transition-transform hover:scale-105">
+            <div className="absolute -right-2 sm:-right-6 md:-right-10 lg:-right-20 xl:-right-24 -bottom-3 sm:bottom-1 md:bottom-2 z-20 animate-glide select-none pointer-events-none sm:pointer-events-auto">
+              <div className="w-20 h-20 sm:w-26 sm:h-26 md:w-32 md:h-32 rounded-full glass-green-orb flex flex-col items-center justify-center p-1.5 sm:p-2.5 sm:p-3 text-center shadow-xl sm:shadow-2xl transition-transform hover:scale-105">
                 {/* Pulsing Status Dot */}
                 <div className="flex items-center space-x-1 mb-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -162,7 +202,7 @@ export default function LandingPage() {
                   100%
                 </span>
                 {/* Trust & Execution */}
-                <span className="text-[8px] sm:text-[9px] md:text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider leading-tight mt-0.5">
+                <span className="text-[7.5px] sm:text-[9px] md:text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider leading-tight mt-0.5">
                   trust &amp; execution
                 </span>
               </div>
@@ -193,22 +233,22 @@ export default function LandingPage() {
           </div>
 
           {/* Live Trust Metrics Strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-10 max-w-3xl mx-auto">
-            <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pt-10 max-w-3xl mx-auto">
+            <div className="glass-card p-3 sm:p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
               <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Escrow Security</span>
-              <p className="text-lg font-black text-slate-900">100% Locked</p>
+              <p className="text-base sm:text-lg font-black text-slate-900">100% Locked</p>
             </div>
-            <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
+            <div className="glass-card p-3 sm:p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
               <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Arbitration Bias</span>
-              <p className="text-lg font-black text-slate-900">0% Human Error</p>
+              <p className="text-base sm:text-lg font-black text-slate-900">0% Human Error</p>
             </div>
-            <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
+            <div className="glass-card p-3 sm:p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
               <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Protocol Fee</span>
-              <p className="text-lg font-black text-slate-900">2.5% On Success</p>
+              <p className="text-base sm:text-lg font-black text-slate-900">2.5% On Success</p>
             </div>
-            <div className="glass-card p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
+            <div className="glass-card p-3 sm:p-4 rounded-2xl text-center bg-white/85 backdrop-blur-xl border border-white/90 shadow-lg shadow-slate-300/20">
               <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Option B</span>
-              <p className="text-lg font-black text-slate-900">Preserved Escrow</p>
+              <p className="text-base sm:text-lg font-black text-slate-900">Preserved Escrow</p>
             </div>
           </div>
         </section>
@@ -245,7 +285,7 @@ export default function LandingPage() {
 
           {/* Active Glass Slide Card */}
           <div className="max-w-4xl mx-auto">
-            <div className="glass-panel p-8 sm:p-12 rounded-3xl relative overflow-hidden transition-all duration-300">
+            <div className="glass-panel p-6 sm:p-10 md:p-12 rounded-3xl relative overflow-hidden transition-all duration-300">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
                 <div className="space-y-4 max-w-xl">
                   <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold">
@@ -381,7 +421,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
             {/* Step 1 Palette */}
-            <div className="glass-card glass-card-hover p-8 rounded-3xl space-y-4">
+            <div className="glass-card glass-card-hover p-6 sm:p-8 rounded-3xl space-y-4">
               <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 font-extrabold text-sm">
                 01
               </div>
@@ -402,7 +442,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 2 Palette */}
-            <div className="glass-card glass-card-hover p-8 rounded-3xl space-y-4">
+            <div className="glass-card glass-card-hover p-6 sm:p-8 rounded-3xl space-y-4">
               <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 font-extrabold text-sm">
                 02
               </div>
@@ -423,7 +463,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 3 Palette */}
-            <div className="glass-card glass-card-hover p-8 rounded-3xl space-y-4">
+            <div className="glass-card glass-card-hover p-6 sm:p-8 rounded-3xl space-y-4">
               <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 font-extrabold text-sm">
                 03
               </div>
@@ -447,7 +487,7 @@ export default function LandingPage() {
         </section>
 
         {/* ================= FINAL CTA SECTION ================= */}
-        <section className="glass-panel p-10 sm:p-16 rounded-3xl text-center space-y-6 relative overflow-hidden">
+        <section className="glass-panel p-6 sm:p-12 md:p-16 rounded-3xl text-center space-y-6 relative overflow-hidden">
           <div className="max-w-2xl mx-auto space-y-4">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               Ready to post or hunt verified Web3 gigs?
