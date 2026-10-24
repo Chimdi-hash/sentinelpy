@@ -21,10 +21,25 @@ import {
   Upload,
   Camera,
   Trash2,
-  LogOut
+  LogOut,
+  Plus,
+  Pencil,
+  X,
+  Image as ImageIcon,
+  FolderGit2
 } from 'lucide-react';
 import { createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
+
+export interface PortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  projectUrl?: string;
+  imageUrl?: string;
+  tags?: string[];
+  year?: string;
+}
 
 const AVAILABLE_ROLES = [
   "Full-Stack Web3 Dev",
@@ -64,6 +79,21 @@ export default function ProfileMarketPage() {
   const [github, setGithub] = useState('');
   const [email, setEmail] = useState('');
   const [website, setWebsite] = useState('');
+
+  // Portfolio / Previous Work State
+  const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  // Project Form State
+  const [projTitle, setProjTitle] = useState('');
+  const [projDesc, setProjDesc] = useState('');
+  const [projUrl, setProjUrl] = useState('');
+  const [projImageUrl, setProjImageUrl] = useState('');
+  const [projTags, setProjTags] = useState<string[]>([]);
+  const [projTagInput, setProjTagInput] = useState('');
+  const [projYear, setProjYear] = useState('');
+  const projFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // On-Chain Stats
   const [onChainStats, setOnChainStats] = useState<{
@@ -113,10 +143,12 @@ export default function ProfileMarketPage() {
           setGithub(u.github || '');
           setEmail(u.email || '');
           setWebsite(u.website || '');
+          setPortfolio(Array.isArray(u.portfolio) ? u.portfolio : []);
         } else {
           setDisplayName(`Hunter_${account.slice(2, 6)}`);
           setHeadline('Web3 Freelancer & Builder');
           setAvatarUrl(`https://api.dicebear.com/7.x/identicon/svg?seed=${account}`);
+          setPortfolio([]);
         }
       })
       .catch((err) => console.error('Error loading profile:', err))
@@ -222,6 +254,123 @@ export default function ProfileMarketPage() {
     setSkills(skills.filter((s) => s !== skillToRemove));
   };
 
+  // Project Handlers
+  const handleProjImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (JPEG, PNG, WebP, GIF)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target?.result as string;
+
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.85);
+          setProjImageUrl(compressed);
+        } else {
+          setProjImageUrl(rawDataUrl);
+        }
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const openAddProject = () => {
+    setEditingIndex(null);
+    setProjTitle('');
+    setProjDesc('');
+    setProjUrl('');
+    setProjImageUrl('');
+    setProjTags([]);
+    setProjTagInput('');
+    setProjYear(new Date().getFullYear().toString());
+    setShowProjectModal(true);
+  };
+
+  const openEditProject = (index: number) => {
+    const p = portfolio[index];
+    if (!p) return;
+    setEditingIndex(index);
+    setProjTitle(p.title);
+    setProjDesc(p.description);
+    setProjUrl(p.projectUrl || '');
+    setProjImageUrl(p.imageUrl || '');
+    setProjTags(p.tags || []);
+    setProjTagInput('');
+    setProjYear(p.year || '');
+    setShowProjectModal(true);
+  };
+
+  const handleSaveProject = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projTitle.trim()) {
+      alert('Please enter a project title');
+      return;
+    }
+
+    const newItem: PortfolioItem = {
+      id: editingIndex !== null ? portfolio[editingIndex].id : Date.now().toString(),
+      title: projTitle.trim(),
+      description: projDesc.trim(),
+      projectUrl: projUrl.trim(),
+      imageUrl: projImageUrl.trim(),
+      tags: projTags,
+      year: projYear.trim(),
+    };
+
+    if (editingIndex !== null) {
+      const updated = [...portfolio];
+      updated[editingIndex] = newItem;
+      setPortfolio(updated);
+    } else {
+      setPortfolio([...portfolio, newItem]);
+    }
+
+    setShowProjectModal(false);
+  };
+
+  const handleDeleteProject = (index: number) => {
+    if (confirm('Are you sure you want to remove this previous work?')) {
+      setPortfolio(portfolio.filter((_, idx) => idx !== index));
+    }
+  };
+
+  const addProjTag = (tag: string) => {
+    const cleaned = tag.trim();
+    if (cleaned && !projTags.includes(cleaned)) {
+      setProjTags([...projTags, cleaned]);
+    }
+    setProjTagInput('');
+  };
+
+  const removeProjTag = (tagToRemove: string) => {
+    setProjTags(projTags.filter((t) => t !== tagToRemove));
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!account) return;
@@ -236,6 +385,7 @@ export default function ProfileMarketPage() {
         bio: bio.trim(),
         roles,
         skills,
+        portfolio,
         linkedin: linkedin.trim(),
         twitter: twitter.trim(),
         github: github.trim(),
@@ -565,6 +715,142 @@ export default function ProfileMarketPage() {
                   </div>
                 </div>
 
+                {/* Career Portfolio & Previous Work */}
+                <div className="pt-2 border-t border-slate-200/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <FolderGit2 className="w-4 h-4 text-slate-700" />
+                        <label className="text-[11px] font-bold uppercase text-slate-700">
+                          Previous Work &amp; Career Portfolio
+                        </label>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Add past projects you've built throughout your career with pictures to prove your skills.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={openAddProject}
+                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-sm active:scale-95"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Work</span>
+                    </button>
+                  </div>
+
+                  {/* Portfolio List */}
+                  {portfolio.length === 0 ? (
+                    <div className="p-6 rounded-2xl glass-slide border border-dashed border-slate-300 text-center space-y-2">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center mx-auto text-slate-500">
+                        <Briefcase className="w-5 h-5 text-slate-400" />
+                      </div>
+                      <p className="text-xs font-semibold text-slate-700">No previous work added yet</p>
+                      <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                        Clients prioritize freelancers with visual proof of work. Add past dApps, smart contracts, designs, or audits with screenshots!
+                      </p>
+                      <button
+                        type="button"
+                        onClick={openAddProject}
+                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-950 text-xs font-semibold transition shadow-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Your First Project</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {portfolio.map((proj, idx) => (
+                        <div
+                          key={proj.id || idx}
+                          className="p-3.5 rounded-2xl glass-card border border-white hover:border-slate-300 transition-all flex flex-col justify-between space-y-3 group"
+                        >
+                          <div className="space-y-2.5">
+                            {/* Project Image */}
+                            <div className="relative w-full h-32 rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80">
+                              {proj.imageUrl ? (
+                                <img
+                                  src={proj.imageUrl}
+                                  alt={proj.title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                                  <ImageIcon className="w-6 h-6 mb-1 text-slate-300" />
+                                  <span className="text-[10px]">No image attached</span>
+                                </div>
+                              )}
+                              {proj.year && (
+                                <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-slate-900/75 backdrop-blur-md text-[9px] font-bold text-white">
+                                  {proj.year}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Title & Link */}
+                            <div>
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-bold text-slate-900 truncate">{proj.title}</h4>
+                                {proj.projectUrl && (
+                                  <a
+                                    href={proj.projectUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-slate-400 hover:text-slate-900"
+                                    title="Open Project"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </a>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-600 line-clamp-2 mt-1 leading-relaxed">
+                                {proj.description || 'No description'}
+                              </p>
+                            </div>
+
+                            {/* Tags */}
+                            {proj.tags && proj.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {proj.tags.slice(0, 3).map((tag, tIdx) => (
+                                  <span
+                                    key={tIdx}
+                                    className="text-[9px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                                {proj.tags.length > 3 && (
+                                  <span className="text-[9px] text-slate-400">+{proj.tags.length - 3}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Card Actions */}
+                          <div className="flex items-center justify-end space-x-1.5 pt-2 border-t border-slate-100">
+                            <button
+                              type="button"
+                              onClick={() => openEditProject(idx)}
+                              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition"
+                              title="Edit Project"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProject(idx)}
+                              className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                              title="Delete Project"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Social Profiles & Direct Contact */}
                 <div>
                   <label className="block text-[11px] font-bold uppercase text-slate-600 mb-3">
@@ -728,6 +1014,50 @@ export default function ProfileMarketPage() {
                     </div>
                   </div>
 
+                  {/* Previous Work Portfolio Showcase */}
+                  {portfolio.length > 0 && (
+                    <div className="pt-3 border-t border-slate-100 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Previous Work ({portfolio.length})
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">Verified Career</span>
+                      </div>
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        {portfolio.map((item, idx) => (
+                          <div
+                            key={item.id || idx}
+                            className="p-2.5 rounded-xl glass-slide border border-white/90 flex items-center space-x-3 group"
+                          >
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                              {item.imageUrl ? (
+                                <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                  <ImageIcon className="w-4 h-4" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h5 className="text-xs font-bold text-slate-900 truncate">{item.title}</h5>
+                              <p className="text-[10px] text-slate-500 line-clamp-1">{item.description}</p>
+                            </div>
+                            {item.projectUrl && (
+                              <a
+                                href={item.projectUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-slate-400 hover:text-slate-800 shrink-0"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Social Channels Preview */}
                   <div className="flex items-center space-x-3 pt-2 border-t border-slate-100 text-xs text-slate-500">
                     {email && (
@@ -759,8 +1089,209 @@ export default function ProfileMarketPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200/80 bg-white/40 py-6 text-center text-xs text-slate-500">
-        TrustlessWork Protocol • Job Market Appearance & Reputation
+        TrustlessWork Protocol • Job Market Appearance &amp; Reputation
       </footer>
+
+      {/* ================= MODAL: ADD / EDIT PREVIOUS WORK ================= */}
+      {showProjectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md animate-welcome">
+          <div className="w-full max-w-lg rounded-3xl glass-panel p-6 sm:p-7 space-y-4 border border-white shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
+              <div className="flex items-center space-x-2">
+                <FolderGit2 className="w-5 h-5 text-slate-800" />
+                <h3 className="text-base font-extrabold text-slate-900">
+                  {editingIndex !== null ? 'Edit Previous Work' : 'Add Previous Work / Project'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowProjectModal(false)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProject} className="space-y-4">
+              {/* Project Image Preview & Device Upload */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1.5">
+                  Project Picture / Screenshot
+                </label>
+                <div className="flex items-start gap-4 p-3.5 rounded-2xl glass-slide border border-white">
+                  <div className="relative w-24 h-20 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                    {projImageUrl ? (
+                      <img src={projImageUrl} alt="Project Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 text-center p-1">
+                        <ImageIcon className="w-5 h-5 mb-0.5 text-slate-300" />
+                        <span className="text-[9px]">No image</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <input
+                      ref={projFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProjImageUpload}
+                      className="hidden"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => projFileInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center space-x-1.5 active:scale-95 shadow-sm"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload from Device</span>
+                      </button>
+                      {projImageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setProjImageUrl('')}
+                          className="px-2.5 py-1.5 rounded-xl glass-card text-rose-600 text-xs font-medium hover:bg-rose-50 transition"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="url"
+                      value={projImageUrl.startsWith('data:image') ? '' : projImageUrl}
+                      onChange={(e) => setProjImageUrl(e.target.value)}
+                      placeholder={projImageUrl.startsWith('data:image') ? '(Custom photo uploaded from device memory)' : 'Or paste image URL...'}
+                      className="w-full glass-input rounded-xl px-2.5 py-1 text-[11px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Title & Year */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                    Project Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={projTitle}
+                    onChange={(e) => setProjTitle(e.target.value)}
+                    placeholder="e.g. Cross-Chain Bridge UI"
+                    className="w-full glass-input rounded-xl px-3 py-2 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                    Year / Period
+                  </label>
+                  <input
+                    type="text"
+                    value={projYear}
+                    onChange={(e) => setProjYear(e.target.value)}
+                    placeholder="2024"
+                    className="w-full glass-input rounded-xl px-3 py-2 text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Project / Live URL */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                  Project or Live Deliverable URL
+                </label>
+                <input
+                  type="url"
+                  value={projUrl}
+                  onChange={(e) => setProjUrl(e.target.value)}
+                  placeholder="https://github.com/... or https://..."
+                  className="w-full glass-input rounded-xl px-3 py-2 text-xs"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                  Description / Role &amp; Achievements
+                </label>
+                <textarea
+                  rows={3}
+                  value={projDesc}
+                  onChange={(e) => setProjDesc(e.target.value)}
+                  placeholder="Summarize the project, what you built, and technologies used..."
+                  className="w-full glass-input rounded-xl px-3 py-2 text-xs resize-none"
+                />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                  Technologies / Tags
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={projTagInput}
+                    onChange={(e) => setProjTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addProjTag(projTagInput);
+                      }
+                    }}
+                    placeholder="Type tag (e.g. Solidity) and press Enter..."
+                    className="flex-1 glass-input rounded-xl px-3 py-1.5 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addProjTag(projTagInput)}
+                    className="px-3 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-semibold"
+                  >
+                    Add
+                  </button>
+                </div>
+                {projTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {projTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center space-x-1 text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg border border-slate-200"
+                      >
+                        <span>{tag}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeProjTag(tag)}
+                          className="text-slate-400 hover:text-slate-800 ml-1 font-bold"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowProjectModal(false)}
+                  className="px-4 py-2 rounded-xl glass-card text-xs font-semibold text-slate-600 hover:text-slate-900"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition"
+                >
+                  {editingIndex !== null ? 'Save Changes' : 'Add to Portfolio'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

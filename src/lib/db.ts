@@ -9,6 +9,7 @@ export interface UserRecord {
   bio: string | null;
   roles: string | null; // JSON string
   skills: string | null; // JSON string
+  portfolio: string | null; // JSON string of PortfolioItem[]
   linkedin: string | null;
   twitter: string | null;
   github: string | null;
@@ -18,6 +19,14 @@ export interface UserRecord {
   adminNotes: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface JobMetaRecord {
+  id: string;
+  category: string;
+  imageUrl: string | null;
+  client?: string | null;
+  createdAt?: string;
 }
 
 export interface VisitorLogRecord {
@@ -52,6 +61,7 @@ export function getDb(): DatabaseSync {
         bio TEXT,
         roles TEXT,
         skills TEXT,
+        portfolio TEXT,
         linkedin TEXT,
         twitter TEXT,
         github TEXT,
@@ -61,6 +71,14 @@ export function getDb(): DatabaseSync {
         adminNotes TEXT,
         createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
         updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS jobs_meta (
+        id TEXT PRIMARY KEY,
+        category TEXT DEFAULT 'General',
+        imageUrl TEXT,
+        client TEXT,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE TABLE IF NOT EXISTS visitor_logs (
@@ -80,6 +98,13 @@ export function getDb(): DatabaseSync {
         timestamp TEXT DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Dynamic schema migrations for existing SQLite databases
+    try {
+      db.exec('ALTER TABLE users ADD COLUMN portfolio TEXT;');
+    } catch {
+      // Column already exists
+    }
 
     globalForDb.trustlessDb = db;
   }
@@ -102,6 +127,7 @@ export function upsertUser(data: {
   bio?: string | null;
   roles?: string | null;
   skills?: string | null;
+  portfolio?: string | null;
   linkedin?: string | null;
   twitter?: string | null;
   github?: string | null;
@@ -122,6 +148,7 @@ export function upsertUser(data: {
         bio = COALESCE(?, bio),
         roles = COALESCE(?, roles),
         skills = COALESCE(?, skills),
+        portfolio = COALESCE(?, portfolio),
         linkedin = COALESCE(?, linkedin),
         twitter = COALESCE(?, twitter),
         github = COALESCE(?, github),
@@ -137,6 +164,7 @@ export function upsertUser(data: {
       data.bio ?? null,
       data.roles ?? null,
       data.skills ?? null,
+      data.portfolio ?? null,
       data.linkedin ?? null,
       data.twitter ?? null,
       data.github ?? null,
@@ -148,9 +176,9 @@ export function upsertUser(data: {
   } else {
     const stmt = db.prepare(`
       INSERT INTO users (
-        address, displayName, avatarUrl, headline, bio, roles, skills,
+        address, displayName, avatarUrl, headline, bio, roles, skills, portfolio,
         linkedin, twitter, github, email, website, isFlagged, createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
     `);
     stmt.run(
       normalized,
@@ -160,6 +188,7 @@ export function upsertUser(data: {
       data.bio ?? null,
       data.roles ?? null,
       data.skills ?? null,
+      data.portfolio ?? null,
       data.linkedin ?? null,
       data.twitter ?? null,
       data.github ?? null,
@@ -170,6 +199,48 @@ export function upsertUser(data: {
     );
   }
   return getUser(normalized);
+}
+
+// Job Metadata Helpers (Categories & Pictures)
+export function getJobMeta(id: string): JobMetaRecord | null {
+  const db = getDb();
+  const stmt = db.prepare('SELECT * FROM jobs_meta WHERE id = ? LIMIT 1');
+  return (stmt.get(id) as JobMetaRecord) || null;
+}
+
+export function getAllJobsMeta(): Record<string, JobMetaRecord> {
+  const db = getDb();
+  const stmt = db.prepare('SELECT * FROM jobs_meta');
+  const rows = stmt.all() as unknown as JobMetaRecord[];
+  const map: Record<string, JobMetaRecord> = {};
+  for (const row of rows) {
+    map[row.id] = row;
+  }
+  return map;
+}
+
+export function upsertJobMeta(data: {
+  id: string;
+  category?: string;
+  imageUrl?: string | null;
+  client?: string | null;
+}): JobMetaRecord {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO jobs_meta (id, category, imageUrl, client, createdAt)
+    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(id) DO UPDATE SET
+      category = COALESCE(excluded.category, jobs_meta.category),
+      imageUrl = COALESCE(excluded.imageUrl, jobs_meta.imageUrl),
+      client = COALESCE(excluded.client, jobs_meta.client)
+  `);
+  stmt.run(
+    data.id,
+    data.category || 'General',
+    data.imageUrl || null,
+    data.client || null
+  );
+  return getJobMeta(data.id)!;
 }
 
 export function listUsers(searchQuery?: string, limit: number = 100): UserRecord[] {

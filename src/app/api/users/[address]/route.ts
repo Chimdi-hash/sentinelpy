@@ -23,6 +23,7 @@ export async function GET(
         ...user,
         roles: user.roles ? JSON.parse(user.roles) : [],
         skills: user.skills ? JSON.parse(user.skills) : [],
+        portfolio: user.portfolio ? JSON.parse(user.portfolio) : [],
       },
     });
   } catch (error) {
@@ -49,6 +50,7 @@ export async function POST(
       bio,
       roles,
       skills,
+      portfolio,
       linkedin,
       twitter,
       github,
@@ -64,6 +66,7 @@ export async function POST(
       bio: bio || null,
       roles: roles ? JSON.stringify(roles) : null,
       skills: skills ? JSON.stringify(skills) : null,
+      portfolio: portfolio ? JSON.stringify(portfolio) : null,
       linkedin: linkedin || null,
       twitter: twitter || null,
       github: github || null,
@@ -81,6 +84,7 @@ export async function POST(
         ...updatedUser,
         roles: updatedUser.roles ? JSON.parse(updatedUser.roles) : [],
         skills: updatedUser.skills ? JSON.parse(updatedUser.skills) : [],
+        portfolio: updatedUser.portfolio ? JSON.parse(updatedUser.portfolio) : [],
       },
     });
   } catch (error) {

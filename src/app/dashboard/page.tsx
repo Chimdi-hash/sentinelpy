@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
@@ -26,13 +26,22 @@ import {
   ChevronRight,
   TrendingUp,
   Settings,
-  LogOut
+  LogOut,
+  Upload,
+  Camera,
+  Layers,
+  Layout,
+  Cpu,
+  Server,
+  Palette,
+  CheckSquare,
+  Image as ImageIcon
 } from 'lucide-react';
 import { createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
 import { custom, parseEther, formatEther } from 'viem';
 
-export interface Job {
+interface Job {
   id: string;
   title: string;
   description: string;
@@ -42,9 +51,32 @@ export interface Job {
   min_stake_wei: string;
   escrow_balance: string;
   pending_submissions: number;
+  category?: string;
+  imageUrl?: string;
 }
 
-export interface Submission {
+const JOB_CATEGORIES = [
+  { id: 'ALL', name: 'All Jobs' },
+  { id: 'SMART_CONTRACTS', name: 'Smart Contracts & Security' },
+  { id: 'FRONTEND_WEB3', name: 'Frontend & Web3 UI' },
+  { id: 'AI_AGENTS', name: 'AI & Autonomous Agents' },
+  { id: 'BACKEND_INFRA', name: 'Backend & Protocol Infra' },
+  { id: 'DESIGN_CREATIVE', name: 'Design & UI/UX' },
+  { id: 'QA_AUDIT', name: 'Auditing & QA' },
+];
+
+const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
+  SMART_CONTRACTS: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=600&q=80',
+  FRONTEND_WEB3: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80',
+  AI_AGENTS: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
+  BACKEND_INFRA: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80',
+  DESIGN_CREATIVE: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=600&q=80',
+  QA_AUDIT: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80',
+  ALL: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=600&q=80',
+  General: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=600&q=80',
+};
+
+interface Submission {
   id: string;
   job_id: string;
   worker: string;
@@ -56,7 +88,7 @@ export interface Submission {
   payout_status: string;
 }
 
-export interface WorkerRecord {
+interface WorkerRecord {
   address: string;
   total_earned_wei: number;
   jobs_completed: number;
@@ -84,6 +116,10 @@ function DashboardContent() {
   const [actionLoading, setActionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Category & Sectioning state
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [jobsViewMode, setJobsViewMode] = useState<'filtered' | 'sectioned'>('filtered');
+
   // Modals state
   const [showPostJobModal, setShowPostJobModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -95,6 +131,54 @@ function DashboardContent() {
   const [jobRubric, setJobRubric] = useState('');
   const [jobEscrowGen, setJobEscrowGen] = useState('1.0');
   const [jobMinStakeGen, setJobMinStakeGen] = useState('0.1');
+  const [jobCategory, setJobCategory] = useState('SMART_CONTRACTS');
+  const [jobImageUrl, setJobImageUrl] = useState('');
+  const jobImageInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Upload job picture from device memory with auto-compression
+  const handleJobImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (JPEG, PNG, WebP, GIF)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target?.result as string;
+
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.85);
+          setJobImageUrl(compressed);
+        } else {
+          setJobImageUrl(rawDataUrl);
+        }
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Submit Deliverable form
   const [selectedJobForSubmit, setSelectedJobForSubmit] = useState<Job | null>(null);
@@ -183,14 +267,65 @@ function DashboardContent() {
         chain: studionet,
       });
 
-      // 1. Fetch Jobs
+      // 1. Fetch Jobs & Enrich with Category & Picture
       try {
-        const jobsStr = await (readClient as any).readContract({
-          address: contractAddress,
-          functionName: 'get_all_jobs',
-          args: [],
-        });
-        if (jobsStr) setJobs(JSON.parse(jobsStr));
+        const [jobsStr, metaRes] = await Promise.all([
+          (readClient as any).readContract({
+            address: contractAddress,
+            functionName: 'get_all_jobs',
+            args: [],
+          }).catch((e: any) => {
+            console.warn('get_all_jobs fallback:', e);
+            return null;
+          }),
+          fetch('/api/jobs').then((r) => r.json()).catch(() => ({ jobs: {} })),
+        ]);
+
+        const metaMap = metaRes?.jobs || {};
+
+        if (jobsStr) {
+          const parsedJobs: Job[] = JSON.parse(jobsStr);
+          const enriched = parsedJobs.map((j) => {
+            const meta = metaMap[j.id];
+            let category = meta?.category;
+            let imageUrl = meta?.imageUrl;
+
+            // Fallback parsing from description if tagged
+            if (!category && j.description.includes('[Category:')) {
+              const match = j.description.match(/\[Category:\s*([^\]]+)\]/i);
+              if (match) category = match[1].trim();
+            }
+
+            // Keyword inference if no category
+            if (!category) {
+              const t = (j.title + ' ' + j.description).toLowerCase();
+              if (t.includes('solidity') || t.includes('contract') || t.includes('security') || t.includes('audit')) {
+                category = 'SMART_CONTRACTS';
+              } else if (t.includes('frontend') || t.includes('react') || t.includes('ui') || t.includes('tailwind')) {
+                category = 'FRONTEND_WEB3';
+              } else if (t.includes('ai') || t.includes('agent') || t.includes('llm') || t.includes('genvm')) {
+                category = 'AI_AGENTS';
+              } else if (t.includes('backend') || t.includes('node') || t.includes('api') || t.includes('infra')) {
+                category = 'BACKEND_INFRA';
+              } else if (t.includes('design') || t.includes('figma')) {
+                category = 'DESIGN_CREATIVE';
+              } else {
+                category = 'SMART_CONTRACTS';
+              }
+            }
+
+            if (!imageUrl) {
+              imageUrl = DEFAULT_CATEGORY_IMAGES[category] || DEFAULT_CATEGORY_IMAGES['ALL'];
+            }
+
+            return {
+              ...j,
+              category,
+              imageUrl,
+            };
+          });
+          setJobs(enriched);
+        }
       } catch (e) {
         console.warn('get_all_jobs fallback:', e);
       }
@@ -270,11 +405,30 @@ function DashboardContent() {
         account: account as any,
       });
 
+      // Save metadata (Category & Picture) to API
+      const nextId = jobs.length.toString();
+      try {
+        await fetch('/api/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: nextId,
+            category: jobCategory,
+            imageUrl: jobImageUrl || DEFAULT_CATEGORY_IMAGES[jobCategory] || null,
+            client: account,
+          }),
+        });
+      } catch (metaErr) {
+        console.warn('Metadata save fallback:', metaErr);
+      }
+
       alert(`Job posted successfully with escrow locked! TX: ${tx}`);
       setShowPostJobModal(false);
       setJobTitle('');
       setJobDescription('');
       setJobRubric('');
+      setJobImageUrl('');
+      setJobCategory('SMART_CONTRACTS');
       await loadMarketplaceData();
     } catch (err: any) {
       console.error('Post job error:', err);
@@ -409,13 +563,29 @@ function DashboardContent() {
   }, [account]);
 
   const filteredJobs = jobs.filter((j) => {
+    // 1. Category Filter
+    if (selectedCategory !== 'ALL' && j.category !== selectedCategory) {
+      return false;
+    }
+    // 2. Search Query Filter
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
       j.title.toLowerCase().includes(q) ||
       j.description.toLowerCase().includes(q) ||
-      j.rubric.toLowerCase().includes(q)
+      j.rubric.toLowerCase().includes(q) ||
+      (j.category && j.category.toLowerCase().includes(q))
     );
+  });
+
+  // Category Counts
+  const categoryCounts: Record<string, number> = {
+    ALL: jobs.length,
+  };
+  JOB_CATEGORIES.forEach((cat) => {
+    if (cat.id !== 'ALL') {
+      categoryCounts[cat.id] = jobs.filter((j) => j.category === cat.id).length;
+    }
   });
 
   const myClientJobs = jobs.filter(
@@ -586,127 +756,293 @@ function DashboardContent() {
         )}
 
         {/* ================= TAB 1: AVAILABLE MARKETPLACE GIGS ================= */}
-        {activeTab === 'gigs' && (
-          <div className="space-y-6">
-            
-            {/* Header Strip & Search */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Active & Available Gigs</h2>
-                <p className="text-xs text-slate-500">
-                  Stake collateral and fulfill objective acceptance rubrics to claim the escrow.
-                </p>
-              </div>
+        {activeTab === 'gigs' && (() => {
+          const renderJobCard = (job: Job) => {
+            const escrowGen = Number(job.escrow_balance || '0') / 10**18;
+            const minStakeGen = Number(job.min_stake_wei || '0') / 10**18;
+            const isOpen = job.status === 'OPEN';
+            const catName = JOB_CATEGORIES.find((c) => c.id === job.category)?.name || job.category || 'General';
+            const effectivePic = job.imageUrl || DEFAULT_CATEGORY_IMAGES[job.category || 'General'] || DEFAULT_CATEGORY_IMAGES['ALL'];
 
-              {/* Search Bar */}
-              <div className="relative w-full sm:w-80">
-                <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter gigs by title, rubric keyword..."
-                  className="w-full glass-input rounded-xl pl-10 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400"
-                />
-              </div>
-            </div>
-
-            {/* Gigs Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredJobs.map((job) => {
-                const escrowGen = Number(job.escrow_balance || '0') / 10**18;
-                const minStakeGen = Number(job.min_stake_wei || '0') / 10**18;
-                const isOpen = job.status === 'OPEN';
-
-                return (
-                  <div
-                    key={job.id}
-                    className="p-6 sm:p-7 rounded-3xl glass-card glass-card-hover flex flex-col justify-between space-y-4 group"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">
-                            #{job.id}
-                          </span>
-                          <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-slate-700 transition">
-                            {job.title}
-                          </h3>
-                        </div>
-                        <span
-                          className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider shrink-0 ${
-                            job.status === 'OPEN'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : job.status === 'IN_REVIEW'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                              : job.status === 'AWAITING_CLIENT_ACTION'
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                              : 'bg-slate-100 text-slate-500'
-                          }`}
-                        >
-                          {job.status}
+            return (
+              <div
+                key={job.id}
+                className="p-5 sm:p-6 rounded-3xl glass-card glass-card-hover flex flex-col justify-between space-y-4 group"
+              >
+                <div className="space-y-3.5">
+                  {/* Top Bar: ID, Category, Title, Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                          #{job.id}
+                        </span>
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-900 text-white truncate">
+                          {catName}
                         </span>
                       </div>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-slate-700 transition truncate">
+                        {job.title}
+                      </h3>
+                    </div>
+                    <span
+                      className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider shrink-0 ${
+                        job.status === 'OPEN'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : job.status === 'IN_REVIEW'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : job.status === 'AWAITING_CLIENT_ACTION'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      {job.status}
+                    </span>
+                  </div>
 
-                      <p className="text-xs text-slate-600 line-clamp-2 mb-4 leading-relaxed">
+                  {/* PICTURE ALONGSIDE DESCRIPTION */}
+                  <div className="flex flex-col sm:flex-row gap-4 items-start">
+                    {/* Job Picture */}
+                    <div className="w-full sm:w-40 h-32 sm:h-28 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/90 relative shrink-0 shadow-sm group-hover:shadow-md transition">
+                      <img
+                        src={effectivePic}
+                        alt={job.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = DEFAULT_CATEGORY_IMAGES['ALL'];
+                        }}
+                      />
+                    </div>
+
+                    {/* Description & Client Info alongside Picture */}
+                    <div className="flex-1 space-y-1.5 min-w-0">
+                      <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
                         {job.description || 'No description provided.'}
                       </p>
-
-                      {/* Objective Rubric Snippet */}
-                      <div className="p-3.5 rounded-2xl glass-slide mb-4">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
-                          Objective AI Rubric
+                      <div className="flex items-center space-x-1.5 text-[10px] text-slate-400 font-mono pt-1">
+                        <span>Client:</span>
+                        <span className="font-semibold text-slate-700">
+                          {job.client ? `${job.client.slice(0, 6)}...${job.client.slice(-4)}` : 'Anonymous'}
                         </span>
-                        <p className="text-xs text-slate-800 font-mono line-clamp-3">
-                          {job.rubric}
-                        </p>
                       </div>
-                    </div>
-
-                    <div>
-                      {/* Financial Metrics Strip */}
-                      <div className="flex items-center justify-between text-xs py-3 border-t border-slate-200/80 text-slate-600 mb-4">
-                        <div>
-                          <span className="block text-[10px] uppercase text-slate-400 font-bold">Escrow Bounty</span>
-                          <span className="text-base font-black text-slate-900">{escrowGen.toFixed(2)} GEN</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="block text-[10px] uppercase text-slate-400 font-bold">Required Stake</span>
-                          <span className="text-xs font-bold text-slate-700">{minStakeGen.toFixed(2)} GEN</span>
-                        </div>
-                      </div>
-
-                      {isOpen ? (
-                        <button
-                          onClick={() => {
-                            setSelectedJobForSubmit(job);
-                            setStakeAmountGen(minStakeGen.toString());
-                            setShowSubmitModal(true);
-                          }}
-                          className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-md shadow-slate-300"
-                        >
-                          Stake Collateral & Submit Deliverable
-                        </button>
-                      ) : (
-                        <div className="text-center text-xs text-slate-500 py-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                          {job.status === 'COMPLETED' ? 'Completed & Settled' : 'Under GenVM Review'}
-                        </div>
-                      )}
                     </div>
                   </div>
-                );
-              })}
 
-              {filteredJobs.length === 0 && (
-                <div className="md:col-span-2 p-16 text-center text-slate-500 glass-card rounded-3xl">
-                  <Briefcase className="w-10 h-10 mx-auto text-slate-400 mb-3" />
-                  <p className="text-sm font-bold text-slate-800">No active gigs found</p>
-                  <p className="text-xs text-slate-500 mt-1">Be the first to post a gig and lock an escrow!</p>
+                  {/* Objective Rubric Snippet */}
+                  <div className="p-3.5 rounded-2xl glass-slide">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+                      Objective AI Rubric
+                    </span>
+                    <p className="text-xs text-slate-800 font-mono line-clamp-2">
+                      {job.rubric}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  {/* Financial Metrics Strip */}
+                  <div className="flex items-center justify-between text-xs py-3 border-t border-slate-200/80 text-slate-600 mb-3">
+                    <div>
+                      <span className="block text-[10px] uppercase text-slate-400 font-bold">Escrow Bounty</span>
+                      <span className="text-base font-black text-slate-900">{escrowGen.toFixed(2)} GEN</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-[10px] uppercase text-slate-400 font-bold">Required Stake</span>
+                      <span className="text-xs font-bold text-slate-700">{minStakeGen.toFixed(2)} GEN</span>
+                    </div>
+                  </div>
+
+                  {isOpen ? (
+                    <button
+                      onClick={() => {
+                        setSelectedJobForSubmit(job);
+                        setStakeAmountGen(minStakeGen.toString());
+                        setShowSubmitModal(true);
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-md shadow-slate-300 active:scale-95"
+                    >
+                      Stake Collateral &amp; Submit Deliverable
+                    </button>
+                  ) : (
+                    <div className="text-center text-xs text-slate-500 py-2.5 bg-slate-50 rounded-xl border border-slate-200 font-medium">
+                      {job.status === 'COMPLETED' ? 'Completed & Settled' : 'Under GenVM Review'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          };
+
+          return (
+            <div className="space-y-6">
+              
+              {/* Header Strip & Search */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Active &amp; Available Gigs</h2>
+                  <p className="text-xs text-slate-500">
+                    Browse jobs by category or view the full marketplace. Stake collateral and fulfill rubrics to earn.
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200 text-xs">
+                    <button
+                      onClick={() => setJobsViewMode('filtered')}
+                      className={`px-3 py-1.5 rounded-lg font-semibold transition ${
+                        jobsViewMode === 'filtered' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      Category Filter
+                    </button>
+                    <button
+                      onClick={() => { setJobsViewMode('sectioned'); setSelectedCategory('ALL'); }}
+                      className={`px-3 py-1.5 rounded-lg font-semibold transition ${
+                        jobsViewMode === 'sectioned' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      Sectioned by Type
+                    </button>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div className="relative w-full sm:w-72">
+                    <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Filter gigs by keyword..."
+                      className="w-full glass-input rounded-xl pl-10 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Category Pills Navigation */}
+              <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
+                {JOB_CATEGORIES.map((cat) => {
+                  const count = categoryCounts[cat.id] || 0;
+                  const isSelected = selectedCategory === cat.id;
+
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => {
+                        setSelectedCategory(cat.id);
+                        if (jobsViewMode === 'sectioned') setJobsViewMode('filtered');
+                      }}
+                      className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 shrink-0 ${
+                        isSelected
+                          ? 'bg-slate-900 text-white shadow-md shadow-slate-300'
+                          : 'glass-card text-slate-600 hover:text-slate-900 hover:bg-white'
+                      }`}
+                    >
+                      <span>{cat.name}</span>
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                          isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* CONTENT: Sectioned by Type OR Filtered Feed */}
+              {jobsViewMode === 'sectioned' ? (
+                <div className="space-y-12">
+                  {/* Master Feed Section: All Jobs */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                      <div className="flex items-center space-x-2">
+                        <Layers className="w-5 h-5 text-slate-800" />
+                        <h3 className="text-lg font-black text-slate-900">All Available Jobs</h3>
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-900 text-white font-bold">
+                          {jobs.length} Total Gigs
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {jobs.map((job) => renderJobCard(job))}
+                    </div>
+                  </div>
+
+                  {/* Section for Each Job Type */}
+                  {JOB_CATEGORIES.filter((c) => c.id !== 'ALL').map((cat) => {
+                    const catJobs = jobs.filter((j) => j.category === cat.id);
+                    if (catJobs.length === 0) return null;
+
+                    return (
+                      <div key={cat.id} className="space-y-4 pt-6 border-t border-slate-200/80">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="text-base font-extrabold text-slate-900">{cat.name}</h3>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                              {catJobs.length} {catJobs.length === 1 ? 'gig' : 'gigs'}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSelectedCategory(cat.id);
+                              setJobsViewMode('filtered');
+                            }}
+                            className="text-xs font-semibold text-slate-500 hover:text-slate-900"
+                          >
+                            Filter only {cat.name} &rarr;
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {catJobs.map((job) => renderJobCard(job))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* Filtered Feed */
+                <div className="space-y-4">
+                  {selectedCategory !== 'ALL' && (
+                    <div className="flex items-center justify-between p-3.5 rounded-2xl glass-slide border border-white">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-bold text-slate-900">
+                          Showing category: {JOB_CATEGORIES.find((c) => c.id === selectedCategory)?.name}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-900 text-white font-bold">
+                          {filteredJobs.length}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setSelectedCategory('ALL')}
+                        className="text-xs text-slate-500 hover:text-slate-900 underline font-semibold"
+                      >
+                        Reset to All Jobs
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {filteredJobs.map((job) => renderJobCard(job))}
+
+                    {filteredJobs.length === 0 && (
+                      <div className="md:col-span-2 p-16 text-center text-slate-500 glass-card rounded-3xl">
+                        <Briefcase className="w-10 h-10 mx-auto text-slate-400 mb-3" />
+                        <p className="text-sm font-bold text-slate-800">No gigs found in this category</p>
+                        <p className="text-xs text-slate-500 mt-1">Be the first to post a gig and lock an escrow!</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
+
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ================= TAB 2: MY ESCROWS & SUBMISSIONS ================= */}
         {activeTab === 'my-gigs' && (
@@ -744,6 +1080,28 @@ function DashboardContent() {
                         <span className="text-xs px-2.5 py-1 rounded-full font-bold uppercase bg-slate-100 text-slate-700">
                           {job.status}
                         </span>
+                      </div>
+
+                      {/* Picture alongside description */}
+                      <div className="flex flex-col sm:flex-row gap-4 items-start">
+                        <div className="w-full sm:w-28 h-20 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 shadow-sm">
+                          <img
+                            src={job.imageUrl || DEFAULT_CATEGORY_IMAGES[job.category || 'General'] || DEFAULT_CATEGORY_IMAGES['ALL']}
+                            alt={job.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = DEFAULT_CATEGORY_IMAGES['ALL'];
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                            {job.description || 'No description provided.'}
+                          </p>
+                          <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                            {JOB_CATEGORIES.find((c) => c.id === job.category)?.name || job.category || 'General'}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="flex flex-wrap items-center justify-between text-xs text-slate-600 gap-4">
@@ -954,6 +1312,86 @@ function DashboardContent() {
             </p>
 
             <form onSubmit={handlePostJob} className="space-y-4">
+              {/* Job Category Selection */}
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-600 mb-1.5">Job Type / Category</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {JOB_CATEGORIES.filter((c) => c.id !== 'ALL').map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setJobCategory(cat.id);
+                        if (!jobImageUrl || Object.values(DEFAULT_CATEGORY_IMAGES).includes(jobImageUrl)) {
+                          setJobImageUrl(DEFAULT_CATEGORY_IMAGES[cat.id] || '');
+                        }
+                      }}
+                      className={`p-2.5 rounded-xl text-left border transition text-xs font-semibold ${
+                        jobCategory === cat.id
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                          : 'bg-white/70 hover:bg-white text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Job Picture Upload / Selection */}
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-600 mb-1.5">
+                  Job Banner / Picture
+                </label>
+                <div className="flex items-start gap-4 p-3.5 rounded-2xl glass-slide border border-white">
+                  <div className="relative w-28 h-20 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 shadow-sm">
+                    <img
+                      src={jobImageUrl || DEFAULT_CATEGORY_IMAGES[jobCategory] || DEFAULT_CATEGORY_IMAGES['ALL']}
+                      alt="Job Preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = DEFAULT_CATEGORY_IMAGES['ALL'];
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <input
+                      ref={jobImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleJobImageUpload}
+                      className="hidden"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => jobImageInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center space-x-1.5 active:scale-95 shadow-sm"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload Photo from Device</span>
+                      </button>
+                      {jobImageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setJobImageUrl('')}
+                          className="px-2.5 py-1.5 rounded-xl glass-card text-rose-600 text-xs font-medium hover:bg-rose-50 transition"
+                        >
+                          Reset Cover
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="url"
+                      value={jobImageUrl.startsWith('data:image') ? '' : jobImageUrl}
+                      onChange={(e) => setJobImageUrl(e.target.value)}
+                      placeholder={jobImageUrl.startsWith('data:image') ? '(Custom photo uploaded from device memory)' : 'Or paste image URL...'}
+                      className="w-full glass-input rounded-xl px-2.5 py-1 text-[11px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-600 mb-1">Gig Title</label>
                 <input
