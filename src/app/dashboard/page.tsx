@@ -24,6 +24,8 @@ import {
   FileText,
   X,
   ChevronRight,
+  ChevronDown,
+  Check,
   TrendingUp,
   Settings,
   LogOut,
@@ -55,14 +57,32 @@ interface Job {
   imageUrl?: string;
 }
 
-const JOB_CATEGORIES = [
-  { id: 'ALL', name: 'All Jobs' },
-  { id: 'SMART_CONTRACTS', name: 'Smart Contracts & Security' },
-  { id: 'FRONTEND_WEB3', name: 'Frontend & Web3 UI' },
-  { id: 'AI_AGENTS', name: 'AI & Autonomous Agents' },
-  { id: 'BACKEND_INFRA', name: 'Backend & Protocol Infra' },
-  { id: 'DESIGN_CREATIVE', name: 'Design & UI/UX' },
-  { id: 'QA_AUDIT', name: 'Auditing & QA' },
+interface JobCategory {
+  id: string;
+  name: string;
+  shortName: string;
+  desc: string;
+}
+
+const PRIMARY_CAT_IDS = ['ALL', 'SMART_CONTRACTS', 'FRONTEND_WEB3', 'AI_AGENTS', 'BACKEND_INFRA'];
+
+const JOB_CATEGORIES: JobCategory[] = [
+  { id: 'ALL', name: 'All Jobs', shortName: 'All Gigs', desc: 'Browse all active engineering & tech gigs' },
+  { id: 'SMART_CONTRACTS', name: 'Smart Contracts & Security', shortName: 'Smart Contracts', desc: 'Solidity, GenVM, Rust, EVM Protocols' },
+  { id: 'FRONTEND_WEB3', name: 'Frontend & Web3 UI', shortName: 'Frontend / Web3', desc: 'React, Next.js, Tailwind, viem, Web3 dApps' },
+  { id: 'AI_AGENTS', name: 'AI & Autonomous Agents', shortName: 'AI & Agents', desc: 'LLM consensus, Agentic workflows, PyTorch, LangChain' },
+  { id: 'BACKEND_INFRA', name: 'Backend & Protocol Infra', shortName: 'Backend & Infra', desc: 'Go, Node.js, Rust, microservices & APIs' },
+  { id: 'MOBILE_DEV', name: 'Mobile App Development', shortName: 'Mobile Dev', desc: 'React Native, Flutter, iOS Swift, Android Kotlin' },
+  { id: 'DEVOPS_CLOUD', name: 'DevOps, Cloud & SRE', shortName: 'DevOps & Cloud', desc: 'AWS, GCP, Docker, Kubernetes, CI/CD, Terraform' },
+  { id: 'DATA_SCIENCE', name: 'Data Science & Analytics', shortName: 'Data & Analytics', desc: 'Python, SQL, ETL pipelines, Pandas, Big Data' },
+  { id: 'SECURITY_PENTEST', name: 'Cybersecurity & Pen Testing', shortName: 'Cybersecurity', desc: 'AppSec, Penetration testing, Bug bounties, Audits' },
+  { id: 'QA_AUTOMATION', name: 'QA & Test Automation', shortName: 'QA & Testing', desc: 'Playwright, Cypress, automated end-to-end testing' },
+  { id: 'GAME_3D_WEBGL', name: 'Game Dev, 3D & WebGL', shortName: 'Game & 3D WebGL', desc: 'Three.js, Unity, Unreal Engine, WebGL, Metaverse' },
+  { id: 'DESIGN_CREATIVE', name: 'UI/UX & Product Design', shortName: 'UI/UX Design', desc: 'Figma, Design systems, Glassmorphism, Wireframing' },
+  { id: 'DEFI_TOKENOMICS', name: 'DeFi & Tokenomics Modeling', shortName: 'DeFi & Tokenomics', desc: 'Economic design, staking mechanisms, bonding curves' },
+  { id: 'TECH_WRITING', name: 'Technical Writing & Docs', shortName: 'Tech Writing', desc: 'Developer docs, API specs, Whitepapers, GitBook' },
+  { id: 'PRODUCT_MANAGEMENT', name: 'Product & Tech Management', shortName: 'Product & Scrum', desc: 'Sprint planning, Technical roadmaps, Agile/Scrum' },
+  { id: 'GENERAL_TECH', name: 'Other / General Tech Gigs', shortName: 'Other Tech', desc: 'Custom scripting, migrations & specialized tasks' },
 ];
 
 const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
@@ -70,7 +90,17 @@ const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
   FRONTEND_WEB3: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80',
   AI_AGENTS: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
   BACKEND_INFRA: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80',
+  MOBILE_DEV: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=600&q=80',
+  DEVOPS_CLOUD: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80',
+  DATA_SCIENCE: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80',
+  SECURITY_PENTEST: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80',
+  QA_AUTOMATION: 'https://images.unsplash.com/photo-1504639725590-34d0984388bd?auto=format&fit=crop&w=600&q=80',
+  GAME_3D_WEBGL: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=600&q=80',
   DESIGN_CREATIVE: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=600&q=80',
+  DEFI_TOKENOMICS: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80',
+  TECH_WRITING: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=600&q=80',
+  PRODUCT_MANAGEMENT: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=600&q=80',
+  GENERAL_TECH: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
   QA_AUDIT: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80',
   ALL: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=600&q=80',
   General: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=600&q=80',
@@ -119,6 +149,8 @@ function DashboardContent() {
   // Category & Sectioning state
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [jobsViewMode, setJobsViewMode] = useState<'filtered' | 'sectioned'>('filtered');
+  const [showSpecificityDropdown, setShowSpecificityDropdown] = useState(false);
+  const specificityDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Modals state
   const [showPostJobModal, setShowPostJobModal] = useState(false);
@@ -133,7 +165,31 @@ function DashboardContent() {
   const [jobMinStakeGen, setJobMinStakeGen] = useState('0.1');
   const [jobCategory, setJobCategory] = useState('SMART_CONTRACTS');
   const [jobImageUrl, setJobImageUrl] = useState('');
+  const [showPostJobCategoryDropdown, setShowPostJobCategoryDropdown] = useState(false);
+  const postJobCategoryDropdownRef = useRef<HTMLDivElement | null>(null);
   const jobImageInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        specificityDropdownRef.current &&
+        !specificityDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowSpecificityDropdown(false);
+      }
+      if (
+        postJobCategoryDropdownRef.current &&
+        !postJobCategoryDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowPostJobCategoryDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Upload job picture from device memory with auto-compression
   const handleJobImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -920,9 +976,10 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Category Pills Navigation */}
-              <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
-                {JOB_CATEGORIES.map((cat) => {
+              {/* Category Navigation: Primary Pills + Minimalist Specificity Dropdown */}
+              <div className="flex flex-wrap items-center gap-2 pb-2">
+                {/* Primary Fast Pills */}
+                {JOB_CATEGORIES.filter((c) => PRIMARY_CAT_IDS.includes(c.id)).map((cat) => {
                   const count = categoryCounts[cat.id] || 0;
                   const isSelected = selectedCategory === cat.id;
 
@@ -950,6 +1007,102 @@ function DashboardContent() {
                     </button>
                   );
                 })}
+
+                {/* Minimalist Specificity Dropdown for All Other Tech Domains */}
+                <div className="relative" ref={specificityDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowSpecificityDropdown(!showSpecificityDropdown)}
+                    className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 shrink-0 border ${
+                      !PRIMARY_CAT_IDS.includes(selectedCategory)
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-md shadow-slate-300'
+                        : 'glass-card border-white/80 text-slate-700 hover:text-slate-950 hover:bg-white'
+                    }`}
+                  >
+                    <Filter className="w-3.5 h-3.5" />
+                    <span>
+                      {!PRIMARY_CAT_IDS.includes(selectedCategory)
+                        ? `Domain: ${JOB_CATEGORIES.find((c) => c.id === selectedCategory)?.shortName || 'Custom'}`
+                        : 'Tech Specificity'}
+                    </span>
+                    {!PRIMARY_CAT_IDS.includes(selectedCategory) && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/20 text-white">
+                        {categoryCounts[selectedCategory] || 0}
+                      </span>
+                    )}
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                        showSpecificityDropdown ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {/* Specificity Glass Dropdown Menu */}
+                  {showSpecificityDropdown && (
+                    <div className="absolute left-0 mt-2 w-72 sm:w-80 rounded-2xl glass-panel border border-white/95 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="p-2 border-b border-slate-100 mb-1 flex items-center justify-between">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                          Specialized Tech Domains
+                        </span>
+                        {!PRIMARY_CAT_IDS.includes(selectedCategory) && (
+                          <button
+                            onClick={() => {
+                              setSelectedCategory('ALL');
+                              setShowSpecificityDropdown(false);
+                            }}
+                            className="text-[11px] text-slate-500 hover:text-slate-900 underline font-semibold"
+                          >
+                            Reset to All
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="max-h-72 overflow-y-auto space-y-1 pr-1 scrollbar-thin">
+                        {JOB_CATEGORIES.filter((c) => !PRIMARY_CAT_IDS.includes(c.id)).map((cat) => {
+                          const count = categoryCounts[cat.id] || 0;
+                          const isSelected = selectedCategory === cat.id;
+
+                          return (
+                            <button
+                              key={cat.id}
+                              onClick={() => {
+                                setSelectedCategory(cat.id);
+                                if (jobsViewMode === 'sectioned') setJobsViewMode('filtered');
+                                setShowSpecificityDropdown(false);
+                              }}
+                              className={`w-full p-2.5 rounded-xl text-left text-xs transition flex items-center justify-between group ${
+                                isSelected
+                                  ? 'bg-slate-900 text-white font-bold'
+                                  : 'hover:bg-slate-100 text-slate-700'
+                              }`}
+                            >
+                              <div className="min-w-0 pr-2">
+                                <div className="font-semibold truncate">{cat.name}</div>
+                                <div
+                                  className={`text-[10px] truncate ${
+                                    isSelected ? 'text-slate-300' : 'text-slate-400 group-hover:text-slate-500'
+                                  }`}
+                                >
+                                  {cat.desc}
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-1.5 shrink-0">
+                                <span
+                                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                                  }`}
+                                >
+                                  {count}
+                                </span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* CONTENT: Sectioned by Type OR Filtered Feed */}
@@ -1312,30 +1465,66 @@ function DashboardContent() {
             </p>
 
             <form onSubmit={handlePostJob} className="space-y-4">
-              {/* Job Category Selection */}
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-600 mb-1.5">Job Type / Category</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {JOB_CATEGORIES.filter((c) => c.id !== 'ALL').map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => {
-                        setJobCategory(cat.id);
-                        if (!jobImageUrl || Object.values(DEFAULT_CATEGORY_IMAGES).includes(jobImageUrl)) {
-                          setJobImageUrl(DEFAULT_CATEGORY_IMAGES[cat.id] || '');
-                        }
-                      }}
-                      className={`p-2.5 rounded-xl text-left border transition text-xs font-semibold ${
-                        jobCategory === cat.id
-                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                          : 'bg-white/70 hover:bg-white text-slate-700 border-slate-200'
-                      }`}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                </div>
+              {/* Job Category Selection Dropdown (Minimalist Design) */}
+              <div className="relative" ref={postJobCategoryDropdownRef}>
+                <label className="block text-xs font-bold uppercase text-slate-600 mb-1.5">
+                  Job Domain / Tech Specificity
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPostJobCategoryDropdown(!showPostJobCategoryDropdown)}
+                  className="w-full glass-input rounded-xl p-3 text-xs flex items-center justify-between text-left font-medium bg-white/80 hover:bg-white border border-slate-200 transition focus:outline-none focus:ring-2 focus:ring-slate-400"
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-slate-900 shrink-0"></span>
+                    <span className="font-bold text-slate-900 truncate">
+                      {JOB_CATEGORIES.find((c) => c.id === jobCategory)?.name || 'Select Tech Domain'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 truncate hidden sm:inline">
+                      ({JOB_CATEGORIES.find((c) => c.id === jobCategory)?.desc})
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${
+                      showPostJobCategoryDropdown ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {showPostJobCategoryDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-2xl glass-panel border border-white/95 shadow-2xl p-2 z-50 space-y-1 divide-y divide-slate-100/60">
+                    {JOB_CATEGORIES.filter((c) => c.id !== 'ALL').map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setJobCategory(cat.id);
+                          if (!jobImageUrl || Object.values(DEFAULT_CATEGORY_IMAGES).includes(jobImageUrl)) {
+                            setJobImageUrl(DEFAULT_CATEGORY_IMAGES[cat.id] || '');
+                          }
+                          setShowPostJobCategoryDropdown(false);
+                        }}
+                        className={`w-full p-2.5 rounded-xl text-left text-xs transition flex items-center justify-between group ${
+                          jobCategory === cat.id
+                            ? 'bg-slate-900 text-white font-bold'
+                            : 'hover:bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        <div className="min-w-0 pr-2">
+                          <div className="font-semibold truncate">{cat.name}</div>
+                          <div
+                            className={`text-[10px] truncate ${
+                              jobCategory === cat.id ? 'text-slate-300' : 'text-slate-400'
+                            }`}
+                          >
+                            {cat.desc}
+                          </div>
+                        </div>
+                        {jobCategory === cat.id && <Check className="w-4 h-4 text-white shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Job Picture Upload / Selection */}

@@ -44,17 +44,26 @@ export interface PortfolioItem {
 const AVAILABLE_ROLES = [
   "Full-Stack Web3 Dev",
   "Smart Contract Engineer",
-  "Security Auditor",
-  "AI & ML Specialist",
-  "Frontend / UI Specialist",
-  "Backend Architect",
-  "UI/UX Designer",
-  "Technical Writer"
+  "Security Auditor & Pentester",
+  "AI & Autonomous Agent Dev",
+  "Frontend / Web3 UI Specialist",
+  "Backend & Distributed Systems",
+  "Mobile App Developer (iOS/Android)",
+  "DevOps, Cloud & SRE Engineer",
+  "Data Scientist & Analytics",
+  "QA & Test Automation Engineer",
+  "Game Dev, 3D & WebGL Specialist",
+  "UI/UX & Product Designer",
+  "DeFi & Tokenomics Researcher",
+  "Technical Writer & Docs Specialist",
+  "Technical Product Manager"
 ];
 
 const POPULAR_SKILLS = [
   "Solidity", "GenLayer", "Python", "React", "Next.js", "TypeScript", 
-  "Rust", "Node.js", "TailwindCSS", "EVM", "AI Agents", "Security Auditing"
+  "Rust", "Node.js", "TailwindCSS", "EVM", "AI Agents", "Security Auditing",
+  "Flutter", "React Native", "Swift", "Kotlin", "Docker", "Kubernetes", "AWS",
+  "SQL", "ETL", "Pandas", "Playwright", "Cypress", "Three.js", "Unity", "Tokenomics"
 ];
 
 export default function ProfileMarketPage() {
