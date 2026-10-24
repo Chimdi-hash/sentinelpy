@@ -180,8 +180,28 @@ export default function LandingPage() {
             </span>
           </div>
 
-          {/* Headline with gliding green glassmorphic circle */}
+          {/* Headline with gliding green glassmorphic circles */}
           <div className="relative inline-block w-full max-w-4xl mx-auto px-2">
+            
+            {/* Gliding Green Glassmorphic Circle at the level of 'Guaranteed' on the left */}
+            <div className="absolute -left-2 sm:-left-6 md:-left-10 lg:-left-20 xl:-left-24 -bottom-3 sm:bottom-1 md:bottom-2 z-20 animate-glide-reverse select-none pointer-events-none sm:pointer-events-auto">
+              <div className="w-20 h-20 sm:w-26 sm:h-26 md:w-32 md:h-32 rounded-full glass-green-orb flex flex-col items-center justify-center p-1.5 sm:p-2.5 sm:p-3 text-center shadow-xl sm:shadow-2xl transition-transform hover:scale-105">
+                {/* Pulsing Status Dot */}
+                <div className="flex items-center space-x-1 mb-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                </div>
+                {/* Decentralized */}
+                <span className="text-[7.5px] sm:text-[9px] md:text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider leading-tight">
+                  decentralized
+                </span>
+                {/* Freelance Hub */}
+                <span className="text-[8px] sm:text-[10px] md:text-[11.5px] font-black text-emerald-950 tracking-tight leading-tight uppercase font-mono mt-0.5">
+                  freelance hub
+                </span>
+              </div>
+            </div>
+
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-slate-950 leading-[1.15] drop-shadow-sm">
               Work with confidence. <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-800 to-slate-600">

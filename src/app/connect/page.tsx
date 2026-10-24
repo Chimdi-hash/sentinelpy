@@ -45,29 +45,11 @@ export default function ConnectWalletPage() {
       tagline: 'Connect using MetaMask browser extension or mobile app',
       badge: 'Popular',
       iconSvg: (
-        <svg viewBox="0 0 318.6 318.6" className="w-7 h-7">
-          <path fill="#E2761B" stroke="#E2761B" strokeMiterlimit="10" d="M274.1 35.5l-99.5 73.9L194 65.4z" />
-          <path fill="#E4761B" stroke="#E4761B" strokeMiterlimit="10" d="M44.4 35.5l98.7 74.6-18.4-44.7z" />
-          <path fill="#E4761B" stroke="#E4761B" strokeMiterlimit="10" d="M238.3 206.8l-30 45.4 56.4 15.5 16.3-59.5z" />
-          <path fill="#E4761B" stroke="#E4761B" strokeMiterlimit="10" d="M80.3 206.8l-42.6 1.4 16.2 59.5 56.3-15.5z" />
-          <path fill="#D7C1B3" stroke="#D7C1B3" strokeMiterlimit="10" d="M198.3 170.9l-6.7-19.6-64.2-.6-6.7 19.6 40 23.9z" />
-          <path fill="#233447" stroke="#233447" strokeMiterlimit="10" d="M120.7 150.7l-24.9 14.1 26.5 18.2-1.6-32.3z" />
-          <path fill="#233447" stroke="#233447" strokeMiterlimit="10" d="M197.9 150.7l-1.6 32.3 26.5-18.2z" />
-          <path fill="#CD6116" stroke="#CD6116" strokeMiterlimit="10" d="M80.3 206.8l26.2-7.5-24.9-14.1z" />
-          <path fill="#CD6116" stroke="#CD6116" strokeMiterlimit="10" d="M212.1 185.2l-24.9 14.1 26.3 7.5z" />
-          <path fill="#E4751F" stroke="#E4751F" strokeMiterlimit="10" d="M106.5 199.3l-26.2 7.5 16.3 25.1 26.2-12.7z" />
-          <path fill="#E4751F" stroke="#E4751F" strokeMiterlimit="10" d="M195.8 219.2l26.3-12.4-26.3-7.5 16.3-25.1z" />
-          <path fill="#F6851B" stroke="#F6851B" strokeMiterlimit="10" d="M159.3 194.8l-37-23.9-15.8 28.4 15.8 20 37-24.5z" />
-          <path fill="#F6851B" stroke="#F6851B" strokeMiterlimit="10" d="M159.3 194.8l37 24.5 15.8-20-15.8-28.4z" />
-          <path fill="#C0AD9E" stroke="#C0AD9E" strokeMiterlimit="10" d="M195.8 219.2l-36.5 24.2 3.8 26.3 45.2-17.6z" />
-          <path fill="#C0AD9E" stroke="#C0AD9E" strokeMiterlimit="10" d="M122.8 219.2l-12.5 32.9 45.2 17.6 3.8-26.3z" />
-          <path fill="#161616" stroke="#161616" strokeMiterlimit="10" d="M159.3 269.7l-3.8-26.3-32.7-24.2 10.3 29.3 26.2 21.2z" />
-          <path fill="#161616" stroke="#161616" strokeMiterlimit="10" d="M159.3 269.7l26.2-21.2 10.3-29.3-32.7 24.2z" />
-          <path fill="#763D16" stroke="#763D16" strokeMiterlimit="10" d="M264.4 223.7l-56.4-15.5 19.3-13.6 48.7 10.9z" />
-          <path fill="#763D16" stroke="#763D16" strokeMiterlimit="10" d="M54.2 223.7l-11.6-18.2 48.7-10.9 19.3 13.6z" />
-          <path fill="#F6851B" stroke="#F6851B" strokeMiterlimit="10" d="M264.4 223.7l-11.6-18.2-14.5 1.3 10.5 28.5z" />
-          <path fill="#F6851B" stroke="#F6851B" strokeMiterlimit="10" d="M80.3 206.8l-14.5-1.3-11.6 18.2 15.6 11.6z" />
-        </svg>
+        <img
+          src="/metamask-fox.svg"
+          alt="MetaMask Logo"
+          className="w-7 h-7 object-contain drop-shadow-sm select-none"
+        />
       )
     },
     {
