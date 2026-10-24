@@ -140,13 +140,34 @@ export default function LandingPage() {
             </span>
           </div>
 
-          {/* Headline with drop shadow for crisp readability */}
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-slate-950 leading-[1.1] drop-shadow-sm">
-            Work with confidence. <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-800 to-slate-600">
-              Guaranteed by AI Consensus.
-            </span>
-          </h1>
+          {/* Headline with gliding green glassmorphic circle */}
+          <div className="relative inline-block w-full max-w-4xl mx-auto">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-slate-950 leading-[1.1] drop-shadow-sm">
+              Work with confidence. <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-800 to-slate-600">
+                Guaranteed by AI Consensus.
+              </span>
+            </h1>
+
+            {/* Gliding Green Glassmorphic Circle at the level of 'Consensus' on the right */}
+            <div className="absolute right-0 sm:-right-6 md:-right-10 lg:-right-20 xl:-right-24 bottom-0 sm:bottom-1 md:bottom-2 z-20 animate-glide select-none">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full glass-green-orb flex flex-col items-center justify-center p-2.5 sm:p-3 text-center shadow-2xl transition-transform hover:scale-105">
+                {/* Pulsing Status Dot */}
+                <div className="flex items-center space-x-1 mb-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                </div>
+                {/* 100% */}
+                <span className="text-xs sm:text-sm md:text-base font-black text-emerald-950 tracking-tight leading-none font-mono">
+                  100%
+                </span>
+                {/* Trust & Execution */}
+                <span className="text-[8px] sm:text-[9px] md:text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider leading-tight mt-0.5">
+                  trust &amp; execution
+                </span>
+              </div>
+            </div>
+          </div>
 
           {/* Subtitle */}
           <p className="text-base sm:text-lg text-slate-800 max-w-2xl mx-auto leading-relaxed font-semibold drop-shadow-sm">
