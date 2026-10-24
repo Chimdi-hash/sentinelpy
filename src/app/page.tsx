@@ -98,13 +98,13 @@ export default function LandingPage() {
             </a>
           </nav>
 
-          {/* Connect Wallet Action Button */}
+          {/* Launch Dashboard Action Button */}
           <div className="flex items-center space-x-3">
             <Link
               href={connectedAccount ? "/dashboard" : "/connect"}
               className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-lg shadow-slate-400/20 flex items-center space-x-2 active:scale-95"
             >
-              <span>{connectedAccount ? "Launch Dashboard" : "Connect EVM Wallet"}</span>
+              <span>Launch Dashboard</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -147,10 +147,10 @@ export default function LandingPage() {
           {/* Action CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link
-              href="/connect"
+              href={connectedAccount ? "/dashboard" : "/connect"}
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition shadow-xl shadow-slate-300 flex items-center justify-center space-x-2 group"
             >
-              <span>Connect Wallet & Enter</span>
+              <span>Launch Dashboard</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
 
@@ -423,14 +423,14 @@ export default function LandingPage() {
               Ready to post or hunt verified Web3 gigs?
             </h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Connect your EVM wallet to browse active escrows, set up your job market profile, and start working trustlessly.
+              Launch the dashboard to browse active escrows, set up your job market profile, and start working trustlessly.
             </p>
             <div className="pt-4">
               <Link
-                href="/connect"
+                href={connectedAccount ? "/dashboard" : "/connect"}
                 className="inline-flex items-center space-x-2 px-8 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-xl shadow-slate-300 transition active:scale-95"
               >
-                <span>Connect Wallet to Get Started</span>
+                <span>Launch Dashboard</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
