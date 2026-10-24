@@ -120,6 +120,40 @@ code, pre, .font-mono {
     0 2px 8px -2px rgba(15, 23, 42, 0.08);
 }
 
+/* Welcoming Hero Text Entrance Animations (VisionOS / Linear blur-lift) */
+@keyframes heroTextWelcome {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+    filter: blur(8px);
+  }
+  60% {
+    opacity: 0.9;
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+.animate-hero-badge {
+  animation: heroTextWelcome 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.animate-hero-title {
+  animation: heroTextWelcome 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+}
+
+.animate-hero-sub {
+  animation: heroTextWelcome 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+}
+
+.animate-hero-cta {
+  animation: heroTextWelcome 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.65s both;
+}
+
 /* Animations */
 @keyframes welcomeSlideIn {
   0% {

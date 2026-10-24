@@ -170,7 +170,7 @@ export default function LandingPage() {
         <section className="text-center max-w-4xl mx-auto space-y-8 relative">
           
           {/* Prominent Hero Badge: Decentralized Escrow & Quality Protocol (Concise on Mobile) */}
-          <div className="inline-flex items-center space-x-2 sm:space-x-2.5 px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-full glass-panel border border-white text-slate-900 shadow-md sm:shadow-lg shadow-slate-400/20 hover:shadow-xl transition max-w-[92vw] sm:max-w-none">
+          <div className="inline-flex items-center space-x-2 sm:space-x-2.5 px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-full glass-panel border border-white text-slate-900 shadow-md sm:shadow-lg shadow-slate-400/20 hover:shadow-xl transition max-w-[92vw] sm:max-w-none animate-hero-badge">
             <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
             <span className="text-[10px] sm:text-xs font-bold tracking-wider uppercase text-slate-800 truncate">
               <span className="hidden sm:inline">Decentralized </span>Escrow &amp; Quality Protocol
@@ -180,8 +180,8 @@ export default function LandingPage() {
             </span>
           </div>
 
-          {/* Headline with gliding green glassmorphic circles (Compact on Mobile) */}
-          <div className="relative inline-block w-full max-w-4xl mx-auto px-2">
+          {/* Headline with gliding green glassmorphic circles (Compact on Mobile with welcoming entrance) */}
+          <div className="relative inline-block w-full max-w-4xl mx-auto px-2 animate-hero-title">
             
             {/* Gliding Green Glassmorphic Circle at the level of 'Guaranteed' on the left */}
             <div className="absolute -left-1 sm:-left-6 md:-left-10 lg:-left-20 xl:-left-24 -bottom-2 sm:bottom-1 md:bottom-2 z-20 animate-glide-reverse select-none pointer-events-none sm:pointer-events-auto">
@@ -229,13 +229,13 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Subtitle */}
-          <p className="text-base sm:text-lg text-slate-800 max-w-2xl mx-auto leading-relaxed font-semibold drop-shadow-sm">
+          {/* Subtitle with welcoming entrance */}
+          <p className="text-base sm:text-lg text-slate-800 max-w-2xl mx-auto leading-relaxed font-semibold drop-shadow-sm animate-hero-sub">
             Clients lock escrows with clear acceptance rubrics. Freelancers stake collateral to guarantee performance. GenVM validators evaluate deliverables with mathematical objectivity—eliminating biased human arbitration.
           </p>
 
-          {/* Action CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          {/* Action CTAs with welcoming entrance */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-hero-cta">
             <Link
               href={connectedAccount ? "/dashboard" : "/connect"}
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition shadow-2xl shadow-slate-900/30 flex items-center justify-center space-x-2 group active:scale-95"
