@@ -83,22 +83,22 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white/40" />
       </div>
 
-      {/* Top Glassmorphic Navigation */}
+      {/* Top Glassmorphic Navigation - Concise Height */}
       <header className="sticky top-0 z-40 w-full border-b border-white/60 bg-white/70 backdrop-blur-xl shadow-sm shadow-slate-200/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           
           {/* Brand */}
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 rounded-2xl glass-slide flex items-center justify-center text-slate-800 shadow-md shadow-slate-300/40 border border-white group-hover:scale-105 transition-transform">
-              <ShieldCheck className="w-5 h-5 text-slate-800" />
+          <Link href="/" className="flex items-center space-x-2.5 group">
+            <div className="w-8 h-8 rounded-xl glass-slide flex items-center justify-center text-slate-800 shadow-sm border border-white group-hover:scale-105 transition-transform">
+              <ShieldCheck className="w-4 h-4 text-slate-800" />
             </div>
-            <span className="text-xl font-extrabold tracking-tight text-slate-900">
+            <span className="text-base sm:text-lg font-black tracking-tight text-slate-900">
               Trustless<span className="text-slate-500">Work</span>
             </span>
           </Link>
 
           {/* Navigation Links */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-6 sm:space-x-8">
             <a href="#pillars" className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
               Core Pillars
             </a>
@@ -114,7 +114,7 @@ export default function LandingPage() {
           <div className="flex items-center space-x-3">
             <Link
               href={connectedAccount ? "/dashboard" : "/connect"}
-              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-lg shadow-slate-400/20 flex items-center space-x-2 active:scale-95"
+              className="px-4 py-1.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-md shadow-slate-400/20 flex items-center space-x-1.5 active:scale-95"
             >
               <span>Launch Dashboard</span>
               <ArrowRight className="w-3.5 h-3.5" />

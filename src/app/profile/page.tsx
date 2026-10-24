@@ -426,9 +426,9 @@ export default function ProfileMarketPage() {
   return (
     <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900">
       
-      {/* Top Glass Header */}
+      {/* Top Glass Header - Concise Height */}
       <header className="sticky top-0 z-40 w-full border-b border-white/70 bg-white/75 backdrop-blur-xl shadow-sm shadow-slate-200/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <Link
             href="/dashboard"
             className="flex items-center space-x-2 text-xs font-bold text-slate-700 hover:text-slate-950 transition"

@@ -681,17 +681,17 @@ function DashboardContent() {
         </div>
       )}
 
-      {/* ================= TOP GLASS NAVIGATION ================= */}
+      {/* ================= TOP GLASS NAVIGATION - Concise Height ================= */}
       <header className="sticky top-0 z-40 w-full border-b border-white/70 bg-white/75 backdrop-blur-xl shadow-sm shadow-slate-200/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           
           {/* Brand */}
-          <div className="flex items-center space-x-6">
-            <Link href="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 rounded-2xl glass-slide flex items-center justify-center text-slate-800 shadow-md shadow-slate-300/40 border border-white group-hover:scale-105 transition-transform">
-                <ShieldCheck className="w-5 h-5 text-slate-800" />
+          <div className="flex items-center space-x-4 sm:space-x-6">
+            <Link href="/" className="flex items-center space-x-2.5 group">
+              <div className="w-8 h-8 rounded-xl glass-slide flex items-center justify-center text-slate-800 shadow-sm border border-white group-hover:scale-105 transition-transform">
+                <ShieldCheck className="w-4 h-4 text-slate-800" />
               </div>
-              <span className="text-xl font-extrabold tracking-tight text-slate-900">
+              <span className="text-base sm:text-lg font-black tracking-tight text-slate-900">
                 Trustless<span className="text-slate-500">Work</span>
               </span>
             </Link>

@@ -152,9 +152,9 @@ export default function ConnectWalletPage() {
   return (
     <div className="min-h-screen flex flex-col justify-between selection:bg-slate-200 selection:text-slate-900">
       
-      {/* Top Glass Bar */}
+      {/* Top Glass Bar - Concise Height */}
       <header className="border-b border-white/60 bg-white/70 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Overview</span>
