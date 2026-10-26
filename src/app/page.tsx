@@ -190,49 +190,79 @@ export default function LandingPage() {
               </span>
             </h1>
 
-            {/* Merged Figure-8 Glassmorphic Badge Slanted Towards the Right */}
+            {/* Merged Single Figure-8 Glassmorphic Badge Slanted Towards the Right (Zero internal lines) */}
             <div className="absolute -right-2 sm:-right-8 md:-right-12 lg:-right-18 xl:-right-24 -bottom-3 sm:-bottom-2 md:bottom-0 z-20 select-none pointer-events-none sm:pointer-events-auto animate-glide-figure8">
-              <div className="relative flex flex-col items-center -space-y-2.5 sm:-space-y-4 md:-space-y-5 transition-transform duration-300 hover:scale-105">
+              <div className="relative w-[78px] h-[134px] sm:w-[110px] sm:h-[190px] md:w-[126px] md:h-[218px] transition-transform duration-300 hover:scale-105">
                 
-                {/* Top Loop: Decentralized Freelance Hub */}
-                <div className="w-13 h-13 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full glass-green-orb relative z-10 flex flex-col items-center justify-center p-1 sm:p-2 md:p-2.5 text-center shadow-md sm:shadow-xl border border-white/95">
-                  <div className="-rotate-[16deg] flex flex-col items-center justify-center">
-                    {/* Pulsing Status Dot */}
+                {/* Unified Single Continuous Figure-8 Glass SVG with zero internal lines */}
+                <svg
+                  viewBox="0 0 100 174"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="absolute inset-0 w-full h-full drop-shadow-[0_16px_32px_rgba(16,185,129,0.28)]"
+                >
+                  <defs>
+                    <linearGradient id="figure8-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ecfdf5" stopOpacity="0.90" />
+                      <stop offset="45%" stopColor="#d1fae5" stopOpacity="0.70" />
+                      <stop offset="100%" stopColor="#a7f3d0" stopOpacity="0.45" />
+                    </linearGradient>
+                    <linearGradient id="figure8-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff" stopOpacity="0.98" />
+                      <stop offset="50%" stopColor="#ffffff" stopOpacity="0.85" />
+                      <stop offset="100%" stopColor="#6ee7b7" stopOpacity="0.60" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Outer Continuous Perimeter - NO INTERNAL LINES */}
+                  <path
+                    d="M 28 80 C 16 66, 6 54, 6 40 C 6 18, 26 2, 50 2 C 74 2, 94 18, 94 40 C 94 54, 84 66, 72 80 C 84 94, 98 108, 98 126 C 98 152, 76 172, 50 172 C 24 172, 2 152, 2 126 C 2 108, 16 94, 28 80 Z"
+                    fill="url(#figure8-grad)"
+                    stroke="url(#figure8-stroke)"
+                    strokeWidth="1.75"
+                    className="backdrop-blur-2xl"
+                  />
+
+                  {/* Top Lobe Specular Rim Arc */}
+                  <path
+                    d="M 14 40 C 14 24, 28 10, 50 10 C 72 10, 86 24, 86 40"
+                    stroke="rgba(255, 255, 255, 0.65)"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+
+                {/* Typography Layer: Positioned inside the two lobes of the single 8 shape */}
+                <div className="absolute inset-0 flex flex-col justify-between py-2 sm:py-5 md:py-6 pointer-events-none">
+                  
+                  {/* Top Lobe Text: Decentralized Freelance Hub */}
+                  <div className="flex-1 flex flex-col items-center justify-center -rotate-[16deg] px-1">
                     <div className="flex items-center space-x-0.5 sm:space-x-1 mb-0.5">
                       <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
                       <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
                     </div>
-                    {/* Decentralized */}
                     <span className="text-[5.5px] sm:text-[8px] md:text-[9.5px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-none">
                       decentralized
                     </span>
-                    {/* Freelance Hub */}
                     <span className="text-[6.5px] sm:text-[9px] md:text-[10.5px] font-black text-emerald-950 tracking-tight leading-tight uppercase font-mono mt-0.5">
                       freelance hub
                     </span>
                   </div>
-                </div>
 
-                {/* Connecting Figure-8 Waist Link */}
-                <div className="w-4 h-1 sm:w-6 sm:h-1.5 rounded-full bg-emerald-400/40 blur-[1px] relative z-15 -my-0.5 sm:-my-1 border-t border-white/80 pointer-events-none" />
-
-                {/* Bottom Loop: 100% Trust & Execution */}
-                <div className="w-14 h-14 sm:w-22 sm:h-22 md:w-26 md:h-26 rounded-full glass-green-orb relative z-20 flex flex-col items-center justify-center p-1 sm:p-2 md:p-2.5 text-center shadow-lg sm:shadow-2xl border border-white/95">
-                  <div className="-rotate-[16deg] flex flex-col items-center justify-center">
-                    {/* Pulsing Status Dot */}
+                  {/* Bottom Lobe Text: 100% Trust & Execution */}
+                  <div className="flex-1 flex flex-col items-center justify-center -rotate-[16deg] px-1">
                     <div className="flex items-center space-x-0.5 sm:space-x-1 mb-0.5">
                       <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
                       <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
                     </div>
-                    {/* 100% */}
-                    <span className="text-[9px] sm:text-xs md:text-sm font-black text-emerald-950 tracking-tight leading-none font-mono">
+                    <span className="text-[9.5px] sm:text-xs md:text-sm font-black text-emerald-950 tracking-tight leading-none font-mono">
                       100%
                     </span>
-                    {/* Trust & Execution */}
                     <span className="text-[5.5px] sm:text-[8px] md:text-[9.5px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-tight mt-0.5">
                       trust &amp; execution
                     </span>
                   </div>
+
                 </div>
 
               </div>
