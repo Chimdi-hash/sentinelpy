@@ -180,28 +180,9 @@ export default function LandingPage() {
             </span>
           </div>
 
-          {/* Headline with gliding green glassmorphic circles (Compact on Mobile with welcoming entrance) */}
+          {/* Headline with merged figure-8 glassmorphic badge on the right (Compact on Mobile with welcoming entrance) */}
           <div className="relative inline-block w-full max-w-4xl mx-auto px-2 animate-hero-title">
             
-            {/* Gliding Green Glassmorphic Circle at the level of 'Guaranteed' on the left */}
-            <div className="absolute -left-1 sm:-left-6 md:-left-10 lg:-left-20 xl:-left-24 -bottom-2 sm:bottom-1 md:bottom-2 z-20 animate-glide-reverse select-none pointer-events-none sm:pointer-events-auto">
-              <div className="w-14 h-14 sm:w-24 sm:h-24 md:w-30 md:h-30 lg:w-32 lg:h-32 rounded-full glass-green-orb flex flex-col items-center justify-center p-1 sm:p-2.5 sm:p-3 text-center shadow-lg sm:shadow-2xl transition-transform hover:scale-105">
-                {/* Pulsing Status Dot */}
-                <div className="flex items-center space-x-0.5 sm:space-x-1 mb-0.5">
-                  <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
-                </div>
-                {/* Decentralized */}
-                <span className="text-[6px] sm:text-[8.5px] md:text-[10px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-none">
-                  decentralized
-                </span>
-                {/* Freelance Hub */}
-                <span className="text-[7px] sm:text-[10px] md:text-[11.5px] font-black text-emerald-950 tracking-tight leading-tight uppercase font-mono mt-0.5">
-                  freelance hub
-                </span>
-              </div>
-            </div>
-
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-slate-950 leading-[1.15] drop-shadow-sm">
               Work with confidence. <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-800 to-slate-600">
@@ -209,22 +190,51 @@ export default function LandingPage() {
               </span>
             </h1>
 
-            {/* Gliding Green Glassmorphic Circle at the level of 'Consensus' on the right */}
-            <div className="absolute -right-1 sm:-right-6 md:-right-10 lg:-right-20 xl:-right-24 -bottom-2 sm:bottom-1 md:bottom-2 z-20 animate-glide select-none pointer-events-none sm:pointer-events-auto">
-              <div className="w-14 h-14 sm:w-24 sm:h-24 md:w-30 md:h-30 lg:w-32 lg:h-32 rounded-full glass-green-orb flex flex-col items-center justify-center p-1 sm:p-2.5 sm:p-3 text-center shadow-lg sm:shadow-2xl transition-transform hover:scale-105">
-                {/* Pulsing Status Dot */}
-                <div className="flex items-center space-x-0.5 sm:space-x-1 mb-0.5">
-                  <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
+            {/* Merged Figure-8 Glassmorphic Badge Slanted Towards the Right */}
+            <div className="absolute -right-2 sm:-right-8 md:-right-12 lg:-right-18 xl:-right-24 -bottom-3 sm:-bottom-2 md:bottom-0 z-20 select-none pointer-events-none sm:pointer-events-auto animate-glide-figure8">
+              <div className="relative flex flex-col items-center -space-y-2.5 sm:-space-y-4 md:-space-y-5 transition-transform duration-300 hover:scale-105">
+                
+                {/* Top Loop: Decentralized Freelance Hub */}
+                <div className="w-13 h-13 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full glass-green-orb relative z-10 flex flex-col items-center justify-center p-1 sm:p-2 md:p-2.5 text-center shadow-md sm:shadow-xl border border-white/95">
+                  <div className="-rotate-[16deg] flex flex-col items-center justify-center">
+                    {/* Pulsing Status Dot */}
+                    <div className="flex items-center space-x-0.5 sm:space-x-1 mb-0.5">
+                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
+                    </div>
+                    {/* Decentralized */}
+                    <span className="text-[5.5px] sm:text-[8px] md:text-[9.5px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-none">
+                      decentralized
+                    </span>
+                    {/* Freelance Hub */}
+                    <span className="text-[6.5px] sm:text-[9px] md:text-[10.5px] font-black text-emerald-950 tracking-tight leading-tight uppercase font-mono mt-0.5">
+                      freelance hub
+                    </span>
+                  </div>
                 </div>
-                {/* 100% */}
-                <span className="text-[9.5px] sm:text-sm md:text-base font-black text-emerald-950 tracking-tight leading-none font-mono">
-                  100%
-                </span>
-                {/* Trust & Execution */}
-                <span className="text-[6px] sm:text-[8.5px] md:text-[10px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-tight mt-0.5">
-                  trust &amp; execution
-                </span>
+
+                {/* Connecting Figure-8 Waist Link */}
+                <div className="w-4 h-1 sm:w-6 sm:h-1.5 rounded-full bg-emerald-400/40 blur-[1px] relative z-15 -my-0.5 sm:-my-1 border-t border-white/80 pointer-events-none" />
+
+                {/* Bottom Loop: 100% Trust & Execution */}
+                <div className="w-14 h-14 sm:w-22 sm:h-22 md:w-26 md:h-26 rounded-full glass-green-orb relative z-20 flex flex-col items-center justify-center p-1 sm:p-2 md:p-2.5 text-center shadow-lg sm:shadow-2xl border border-white/95">
+                  <div className="-rotate-[16deg] flex flex-col items-center justify-center">
+                    {/* Pulsing Status Dot */}
+                    <div className="flex items-center space-x-0.5 sm:space-x-1 mb-0.5">
+                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
+                    </div>
+                    {/* 100% */}
+                    <span className="text-[9px] sm:text-xs md:text-sm font-black text-emerald-950 tracking-tight leading-none font-mono">
+                      100%
+                    </span>
+                    {/* Trust & Execution */}
+                    <span className="text-[5.5px] sm:text-[8px] md:text-[9.5px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-tight mt-0.5">
+                      trust &amp; execution
+                    </span>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>

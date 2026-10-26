@@ -206,6 +206,20 @@ code, pre, .font-mono {
   animation: glide-reverse 5.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.6s infinite;
 }
 
+/* Gliding Slanted Figure-8 */
+@keyframes glideFigure8 {
+  0%, 100% {
+    transform: translateY(0px) rotate(16deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(19deg);
+  }
+}
+
+.animate-glide-figure8 {
+  animation: glideFigure8 5.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
 .glass-green-orb {
   background: linear-gradient(135deg, rgba(236, 253, 245, 0.88) 0%, rgba(209, 250, 229, 0.65) 50%, rgba(167, 243, 208, 0.40) 100%);
   backdrop-filter: blur(24px) saturate(200%);
