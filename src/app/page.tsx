@@ -191,15 +191,15 @@ export default function LandingPage() {
             </h1>
 
             {/* Merged Single Figure-8 Glassmorphic Badge Slanted Towards the Right (Zero internal lines) */}
-            <div className="absolute -right-2 sm:-right-8 md:-right-12 lg:-right-18 xl:-right-24 -bottom-3 sm:-bottom-2 md:bottom-0 z-20 select-none pointer-events-none sm:pointer-events-auto animate-glide-figure8">
-              <div className="relative w-[78px] h-[134px] sm:w-[110px] sm:h-[190px] md:w-[126px] md:h-[218px] transition-transform duration-300 hover:scale-105">
+            <div className="absolute -right-1 sm:-right-8 md:-right-12 lg:-right-18 xl:-right-24 -bottom-1 sm:-bottom-2 md:bottom-0 z-20 select-none pointer-events-none sm:pointer-events-auto animate-glide-figure8">
+              <div className="relative w-[54px] h-[94px] sm:w-[110px] sm:h-[190px] md:w-[126px] md:h-[218px] transition-transform duration-300 hover:scale-105">
                 
                 {/* Unified Single Continuous Figure-8 Glass SVG with zero internal lines */}
                 <svg
                   viewBox="0 0 100 174"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
-                  className="absolute inset-0 w-full h-full drop-shadow-[0_16px_32px_rgba(16,185,129,0.28)]"
+                  className="absolute inset-0 w-full h-full drop-shadow-[0_12px_24px_rgba(16,185,129,0.22)] sm:drop-shadow-[0_16px_32px_rgba(16,185,129,0.28)]"
                 >
                   <defs>
                     <linearGradient id="figure8-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -233,32 +233,32 @@ export default function LandingPage() {
                 </svg>
 
                 {/* Typography Layer: Positioned inside the two lobes of the single 8 shape */}
-                <div className="absolute inset-0 flex flex-col justify-between py-2 sm:py-5 md:py-6 pointer-events-none">
+                <div className="absolute inset-0 flex flex-col justify-between py-1.5 sm:py-5 md:py-6 pointer-events-none">
                   
                   {/* Top Lobe Text: Decentralized Freelance Hub */}
-                  <div className="flex-1 flex flex-col items-center justify-center -rotate-[16deg] px-1">
+                  <div className="flex-1 flex flex-col items-center justify-center -rotate-[16deg] px-0.5 sm:px-1">
                     <div className="flex items-center space-x-0.5 sm:space-x-1 mb-0.5">
-                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
+                      <span className="w-0.5 h-0.5 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="w-0.5 h-0.5 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
                     </div>
-                    <span className="text-[5.5px] sm:text-[8px] md:text-[9.5px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-none">
+                    <span className="text-[4.2px] sm:text-[8px] md:text-[9.5px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-none">
                       decentralized
                     </span>
-                    <span className="text-[6.5px] sm:text-[9px] md:text-[10.5px] font-black text-emerald-950 tracking-tight leading-tight uppercase font-mono mt-0.5">
+                    <span className="text-[5px] sm:text-[9px] md:text-[10.5px] font-black text-emerald-950 tracking-tight leading-tight uppercase font-mono mt-0.5">
                       freelance hub
                     </span>
                   </div>
 
                   {/* Bottom Lobe Text: 100% Trust & Execution */}
-                  <div className="flex-1 flex flex-col items-center justify-center -rotate-[16deg] px-1">
+                  <div className="flex-1 flex flex-col items-center justify-center -rotate-[16deg] px-0.5 sm:px-1">
                     <div className="flex items-center space-x-0.5 sm:space-x-1 mb-0.5">
-                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
+                      <span className="w-0.5 h-0.5 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="w-0.5 h-0.5 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-600" />
                     </div>
-                    <span className="text-[9.5px] sm:text-xs md:text-sm font-black text-emerald-950 tracking-tight leading-none font-mono">
+                    <span className="text-[7.5px] sm:text-xs md:text-sm font-black text-emerald-950 tracking-tight leading-none font-mono">
                       100%
                     </span>
-                    <span className="text-[5.5px] sm:text-[8px] md:text-[9.5px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-tight mt-0.5">
+                    <span className="text-[4.2px] sm:text-[8px] md:text-[9.5px] font-extrabold text-emerald-900 uppercase tracking-tight sm:tracking-wider leading-tight mt-0.5">
                       trust &amp; execution
                     </span>
                   </div>
